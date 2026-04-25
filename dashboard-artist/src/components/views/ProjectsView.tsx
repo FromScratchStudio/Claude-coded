@@ -214,11 +214,13 @@ export default function ProjectsView() {
                       <button
                         onClick={() => setEditingId(project.id)}
                         title="Modifier"
+                        aria-label="Modifier le projet"
                         style={{ background: "none", border: "none", color: C.textDim, cursor: "pointer", fontSize: "0.85rem" }}
                       >✎</button>
                       <button
                         onClick={() => removeProject(project.id)}
                         title="Supprimer"
+                        aria-label="Supprimer le projet"
                         style={{ background: "none", border: "none", color: C.textVeryDim, cursor: "pointer", fontSize: "0.9rem" }}
                       >×</button>
                     </div>
