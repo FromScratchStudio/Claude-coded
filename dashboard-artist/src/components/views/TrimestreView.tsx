@@ -7,9 +7,9 @@ import RingDonut from "../ui/RingDonut";
 import type { QuarterAllocation } from "../../types";
 
 const inputStyle = {
-  background: "#0d1118",
-  border: `1px solid #1f2535`,
-  color: "#e8e4dc",
+  background: C.surface,
+  border: `1px solid ${C.border}`,
+  color: C.text,
   borderRadius: 6,
   padding: "0.4rem 0.65rem",
   fontSize: "0.8rem",

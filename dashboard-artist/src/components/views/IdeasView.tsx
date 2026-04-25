@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { C, FONT } from "../../theme";
 import { useStore } from "../../store/useStore";
-import { PROJECTS_INIT } from "../../data/projects";
 import Card from "../ui/Card";
 import SectionTitle from "../ui/SectionTitle";
 import { Tag } from "../ui/Badge";
@@ -20,7 +19,8 @@ const STAGE_COLORS: Record<IdeaStage, string> = {
 };
 
 function IdeaCard({ idea, onAdvance, onRemove }: { idea: { id: string; text: string; source: string; stage: IdeaStage; project?: string; createdAt: string }; onAdvance: (id: string) => void; onRemove: (id: string) => void }) {
-  const project = idea.project ? PROJECTS_INIT.find((p) => p.id === idea.project) : undefined;
+  const projects = useStore((s) => s.projects);
+  const project = idea.project ? projects.find((p) => p.id === idea.project) : undefined;
 
   return (
     <div style={{ background: C.bg, borderRadius: 8, padding: "0.75rem", border: `1px solid ${C.border}`, marginBottom: "0.5rem" }}>
@@ -67,6 +67,7 @@ export default function IdeasView() {
   const addIdea = useStore((s) => s.addIdea);
   const removeIdea = useStore((s) => s.removeIdea);
   const advanceIdea = useStore((s) => s.advanceIdea);
+  const projects = useStore((s) => s.projects);
 
   const [newText, setNewText] = useState("");
   const [newSource, setNewSource] = useState("");
@@ -135,7 +136,7 @@ export default function IdeasView() {
               style={{ background: C.surfaceAlt, border: `1px solid ${C.border}`, color: C.text, borderRadius: 6, padding: "0.4rem 0.5rem", fontSize: "0.8rem", width: "100%" }}
             >
               <option value="">Aucun</option>
-              {PROJECTS_INIT.map((p) => (
+              {projects.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>

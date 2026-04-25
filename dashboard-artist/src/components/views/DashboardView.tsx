@@ -10,15 +10,22 @@ import ProgressBar from "../ui/ProgressBar";
 import RingDonut from "../ui/RingDonut";
 
 export default function DashboardView() {
-  const {
-    energy, setEnergy,
-    plaisir, setPlaisir,
-    joursEpuises, setJoursEpuises,
-    ulWeek, setUlWeek,
-    degradedMode, setDegradedMode,
-    tasks, projects, chapters, ideas,
-    quarter, setActiveView,
-  } = useStore();
+  const energy = useStore((s) => s.energy);
+  const setEnergy = useStore((s) => s.setEnergy);
+  const plaisir = useStore((s) => s.plaisir);
+  const setPlaisir = useStore((s) => s.setPlaisir);
+  const joursEpuises = useStore((s) => s.joursEpuises);
+  const setJoursEpuises = useStore((s) => s.setJoursEpuises);
+  const ulWeek = useStore((s) => s.ulWeek);
+  const setUlWeek = useStore((s) => s.setUlWeek);
+  const degradedMode = useStore((s) => s.degradedMode);
+  const setDegradedMode = useStore((s) => s.setDegradedMode);
+  const tasks = useStore((s) => s.tasks);
+  const projects = useStore((s) => s.projects);
+  const chapters = useStore((s) => s.chapters);
+  const ideas = useStore((s) => s.ideas);
+  const quarter = useStore((s) => s.quarter);
+  const setActiveView = useStore((s) => s.setActiveView);
 
   const allTasks = PHASES.flatMap((p) => p.tasks);
   const doneTasks = allTasks.filter((t) => tasks[t.id] ?? t.done).length;

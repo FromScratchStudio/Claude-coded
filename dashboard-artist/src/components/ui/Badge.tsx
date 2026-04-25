@@ -1,15 +1,10 @@
 import { C, FONT } from "../../theme";
+import { STATUS_META, PRIORITY_META } from "../../data/projects";
 import type { ProjectStatus, ProjectPriority } from "../../types";
 
 interface StatusBadgeProps {
   status: ProjectStatus;
 }
-
-const STATUS_META = {
-  active: { label: "En cours", color: "#10B981", bg: "#064E3B" },
-  pending: { label: "À démarrer", color: "#F59E0B", bg: "#451A03" },
-  backlog: { label: "Backlog", color: "#6B7280", bg: "#1F2937" },
-} as const;
 
 export function StatusBadge({ status }: StatusBadgeProps) {
   const m = STATUS_META[status];
@@ -34,12 +29,6 @@ export function StatusBadge({ status }: StatusBadgeProps) {
 interface PriorityDotProps {
   priority: ProjectPriority;
 }
-
-const PRIORITY_META = {
-  high: { label: "Haute", dot: "#EF4444" },
-  medium: { label: "Moyenne", dot: "#F59E0B" },
-  low: { label: "Basse", dot: "#6B7280" },
-} as const;
 
 export function PriorityDot({ priority }: PriorityDotProps) {
   const m = PRIORITY_META[priority];

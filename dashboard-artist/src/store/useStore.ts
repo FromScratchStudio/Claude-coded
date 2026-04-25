@@ -186,7 +186,7 @@ export const useStore = create<StoreState & StoreActions>()(
     {
       name: "stratex-dashboard-v1",
       storage: createJSONStorage(() => localStorage),
-      // Only persist user-modifiable data, not transient UI state like activeView
+      // Persist all user-modifiable data, including active view for session continuity
       partialize: (state) => ({
         activeView: state.activeView,
         energy: state.energy,

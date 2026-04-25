@@ -1,4 +1,4 @@
-import { FONT } from "../../theme";
+import { C, FONT } from "../../theme";
 import type { Ring } from "../../types";
 
 interface RingDonutProps {
@@ -63,7 +63,7 @@ export default function RingDonut({ rings, allocation, size = 140 }: RingDonutPr
         cy={cy}
         r={radius}
         fill="none"
-        stroke="#1a2030"
+        stroke={C.surfaceHover}
         strokeWidth={strokeWidth}
       />
       {/* Colored arcs */}
@@ -83,7 +83,7 @@ export default function RingDonut({ rings, allocation, size = 140 }: RingDonutPr
         x={cx}
         y={cy - 5}
         textAnchor="middle"
-        fill="#E8C547"
+        fill={C.gold}
         style={{
           fontSize: size * 0.155,
           fontFamily: FONT.display,
@@ -96,7 +96,7 @@ export default function RingDonut({ rings, allocation, size = 140 }: RingDonutPr
         x={cx}
         y={cy + size * 0.1}
         textAnchor="middle"
-        fill="#555b70"
+        fill={C.textDim}
         style={{
           fontSize: size * 0.062,
           fontFamily: FONT.mono,
