@@ -77,7 +77,7 @@ export default function IdeasView() {
     const trimmed = newText.trim();
     if (!trimmed) return;
     addIdea({
-      id: String(Date.now()),
+      id: crypto.randomUUID ? crypto.randomUUID() : `idea-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       text: trimmed,
       source: newSource.trim(),
       project: newProjectId || undefined,

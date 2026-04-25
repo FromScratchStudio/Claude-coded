@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, ReactNode, KeyboardEvent, MouseEvent } from "react";
 import { C } from "../../theme";
 
 interface CardProps {
@@ -8,9 +8,29 @@ interface CardProps {
 }
 
 export default function Card({ children, style, onClick }: CardProps) {
+  const interactiveProps = onClick
+    ? {
+        role: "button" as const,
+        tabIndex: 0,
+        onKeyDown: (e: KeyboardEvent<HTMLDivElement>) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClick();
+          }
+        },
+        onMouseEnter: (e: MouseEvent<HTMLDivElement>) => {
+          (e.currentTarget as HTMLDivElement).style.borderColor = C.borderLight;
+        },
+        onMouseLeave: (e: MouseEvent<HTMLDivElement>) => {
+          (e.currentTarget as HTMLDivElement).style.borderColor = C.border;
+        },
+      }
+    : {};
+
   return (
     <div
       onClick={onClick}
+      {...interactiveProps}
       style={{
         background: C.surface,
         border: `1px solid ${C.border}`,
@@ -20,20 +40,6 @@ export default function Card({ children, style, onClick }: CardProps) {
         transition: onClick ? "border-color 0.15s" : undefined,
         ...style,
       }}
-      onMouseEnter={
-        onClick
-          ? (e) => {
-              (e.currentTarget as HTMLDivElement).style.borderColor = C.borderLight;
-            }
-          : undefined
-      }
-      onMouseLeave={
-        onClick
-          ? (e) => {
-              (e.currentTarget as HTMLDivElement).style.borderColor = C.border;
-            }
-          : undefined
-      }
     >
       {children}
     </div>
