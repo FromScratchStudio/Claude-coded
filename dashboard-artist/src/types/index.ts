@@ -1,0 +1,199 @@
+// ─── Navigation ───────────────────────────────────────────────────────────────
+
+export type ViewId =
+  | "dashboard"
+  | "pipeline"
+  | "projects"
+  | "kpis"
+  | "trimestre"
+  | "phases"
+  | "garde-fous"
+  | "referentiel"
+  | "ideas";
+
+// ─── Roadmap ──────────────────────────────────────────────────────────────────
+
+export interface Task {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
+export interface Phase {
+  id: number;
+  label: string;
+  name: string;
+  months: string;
+  color: string;
+  accent: string;
+  tasks: Task[];
+}
+
+// ─── Allocation rings ─────────────────────────────────────────────────────────
+
+export type RingId = "centre" | "anneau1" | "anneau2" | "anneau3";
+
+export interface Ring {
+  id: RingId;
+  label: string;
+  name: string;
+  pct: number;
+  color: string;
+}
+
+// ─── Projects ─────────────────────────────────────────────────────────────────
+
+export type ProjectStatus = "active" | "pending" | "backlog";
+export type ProjectPriority = "high" | "medium" | "low";
+
+export interface Project {
+  id: string;
+  name: string;
+  ring: RingId;
+  phase: number;
+  status: ProjectStatus;
+  progress: number; // 0–100
+  note: string;
+  priority: ProjectPriority;
+}
+
+// ─── KPIs ─────────────────────────────────────────────────────────────────────
+
+export interface KpiDef {
+  key: string;
+  label: string;
+  target3m: number;
+  target12m: number;
+  target36m: number;
+  unit: string;
+  icon: string;
+}
+
+// ─── Workflow / pipeline ──────────────────────────────────────────────────────
+
+export interface WorkflowStage {
+  id: number;
+  label: string;
+  fullName: string;
+  when: string;
+  gates: string[];
+  rule: string;
+}
+
+export interface Chapter {
+  id: string;
+  title: string;
+  stage: number; // 1–6 (maps to WorkflowStage id)
+  gates: boolean[];
+  lastUpdate: string;
+  hook: string;
+}
+
+export interface WorkMode {
+  id: string;
+  name: string;
+  energy: number; // 1–5
+  color: string;
+  desc: string;
+}
+
+// ─── Quarter ──────────────────────────────────────────────────────────────────
+
+export interface QuarterAllocation {
+  centre: number;
+  ampli: number;
+  collab: number;
+  opt: number;
+}
+
+export interface Quarter {
+  q: string;
+  plp: string;
+  arc: string;
+  arcEnd: string;
+  allocation: QuarterAllocation;
+  amplification: string;
+  outilFocal: string;
+  zonesRouges: string;
+  regleUnique: string;
+}
+
+// ─── Ideas ────────────────────────────────────────────────────────────────────
+
+export type IdeaStage = "raw" | "sorted" | "selected";
+
+export interface Idea {
+  id: string;
+  text: string;
+  source: string;
+  stage: IdeaStage;
+  project?: string;
+  createdAt: string;
+}
+
+// ─── Safeguards / principles ──────────────────────────────────────────────────
+
+export interface DegradedMode {
+  id: string;
+  label: string;
+  color: string;
+  trigger: string;
+  rules: string[];
+  exit: string;
+}
+
+export interface Principle {
+  n: string;
+  text: string;
+  note?: string;
+  quote?: string;
+}
+
+export interface Trap {
+  label: string;
+  desc: string;
+}
+
+export interface CollabCheck {
+  q: string;
+  text: string;
+}
+
+export interface BuildBudget {
+  phase: string;
+  months: string;
+  maxHours: number;
+  color: string;
+}
+
+// ─── Identity / heteronyms ────────────────────────────────────────────────────
+
+export interface HeteronymMember {
+  name: string;
+  role: string;
+  voice: string;
+  refs: string;
+}
+
+export interface Inspiration {
+  nom: string;
+  oeuvre: string;
+  apport: string;
+}
+
+export interface Heteronym {
+  id: string;
+  code: string;
+  name: string;
+  label: string;
+  color: string;
+  public: string;
+  role: string;
+  detail: string;
+  members?: HeteronymMember[];
+  inspirations?: Inspiration[];
+  lexique?: string;
+  playlist?: string[];
+  persona?: string;
+  ton?: string;
+}
