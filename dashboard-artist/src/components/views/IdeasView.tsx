@@ -53,6 +53,7 @@ function IdeaCard({ idea, onAdvance, onRemove }: { idea: { id: string; text: str
         )}
         <button
           onClick={() => onRemove(idea.id)}
+          aria-label="Supprimer l'idée"
           style={{ background: "none", border: `1px solid ${C.border}`, color: C.textDim, borderRadius: 5, padding: "0.2rem 0.45rem", fontSize: "0.65rem", cursor: "pointer" }}
         >
           ✕
