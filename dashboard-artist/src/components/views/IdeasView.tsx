@@ -100,8 +100,8 @@ export default function IdeasView() {
       {/* Header */}
       <div style={{ marginBottom: "1.25rem" }}>
         <h2 style={{ fontFamily: FONT.display, fontSize: "1.2rem", color: C.text, margin: 0 }}>Pipeline d'idées</h2>
+        <p style={{ fontSize: "0.7rem", color: C.textDim, margin: "0.2rem 0 0", fontFamily: FONT.mono }}>
           Brut → Trié → Retenu — filtrer les idées avant de s'engager
-          Brut → Trié → Retenu — filter les idées avant de s'engager
         </p>
       </div>
 
