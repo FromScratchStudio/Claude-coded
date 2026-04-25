@@ -19,10 +19,10 @@ export default function Card({ children, style, onClick }: CardProps) {
           }
         },
         onMouseEnter: (e: MouseEvent<HTMLDivElement>) => {
-          (e.currentTarget as HTMLDivElement).style.borderColor = C.borderLight;
+          (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 0 1px ${C.borderLight}`;
         },
         onMouseLeave: (e: MouseEvent<HTMLDivElement>) => {
-          (e.currentTarget as HTMLDivElement).style.borderColor = C.border;
+          (e.currentTarget as HTMLDivElement).style.boxShadow = "";
         },
       }
     : {};
@@ -37,7 +37,7 @@ export default function Card({ children, style, onClick }: CardProps) {
         borderRadius: 10,
         padding: "1.25rem",
         cursor: onClick ? "pointer" : undefined,
-        transition: onClick ? "border-color 0.15s" : undefined,
+        transition: onClick ? "box-shadow 0.15s" : undefined,
         ...style,
       }}
     >
