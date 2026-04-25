@@ -195,20 +195,22 @@ export default function DashboardView() {
       <Card>
         <SectionTitle accent={C.pink}>Mode dégradé</SectionTitle>
         <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-          <div
+          <button
+            type="button"
             onClick={() => setDegradedMode(null)}
-            style={{ padding: "0.45rem 0.65rem", borderRadius: 6, cursor: "pointer", background: !degradedMode ? C.greenDark : C.bg, border: `1px solid ${!degradedMode ? C.green : C.border}` }}
+            style={{ padding: "0.45rem 0.65rem", borderRadius: 6, cursor: "pointer", background: !degradedMode ? C.greenDark : C.bg, border: `1px solid ${!degradedMode ? C.green : C.border}`, width: "100%", textAlign: "left" }}
           >
             <span style={{ fontSize: "0.7rem", color: !degradedMode ? C.green : C.textMuted }}>✓ Régime normal</span>
-          </div>
+          </button>
           {DEGRADED_MODES.map((mode) => (
-            <div
+            <button
               key={mode.id}
+              type="button"
               onClick={() => setDegradedMode(mode.id)}
-              style={{ padding: "0.45rem 0.65rem", borderRadius: 6, cursor: "pointer", background: degradedMode === mode.id ? `${mode.color}18` : C.bg, border: `1px solid ${degradedMode === mode.id ? mode.color : C.border}` }}
+              style={{ padding: "0.45rem 0.65rem", borderRadius: 6, cursor: "pointer", background: degradedMode === mode.id ? `${mode.color}18` : C.bg, border: `1px solid ${degradedMode === mode.id ? mode.color : C.border}`, width: "100%", textAlign: "left" }}
             >
               <span style={{ fontSize: "0.7rem", color: degradedMode === mode.id ? mode.color : C.textMuted }}>{mode.label}</span>
-            </div>
+            </button>
           ))}
         </div>
         <button
