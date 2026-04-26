@@ -9,7 +9,8 @@ export type ViewId =
   | "phases"
   | "garde-fous"
   | "referentiel"
-  | "ideas";
+  | "ideas"
+  | "kefta-matesha";
 
 // ─── Roadmap ──────────────────────────────────────────────────────────────────
 
@@ -196,4 +197,43 @@ export interface Heteronym {
   playlist?: string[];
   persona?: string;
   ton?: string;
+}
+
+// ─── Kefta Matesha ────────────────────────────────────────────────────────────
+
+export type KMIssueStatus =
+  | "idee"
+  | "preparation"
+  | "production"
+  | "finition"
+  | "publie"
+  | "archive";
+
+export type KMArticleStatus =
+  | "idee"
+  | "brief"
+  | "redaction"
+  | "relecture"
+  | "valide"
+  | "publie";
+
+export interface KMArticle {
+  id: string;
+  rubricId: string;
+  title: string;
+  author: string;
+  status: KMArticleStatus;
+  wordTarget: number;
+  note: string;
+}
+
+export interface KMIssue {
+  id: string;
+  num: number;
+  theme: string;
+  targetDate: string;
+  publishedDate: string;
+  status: KMIssueStatus;
+  articles: KMArticle[];
+  note: string;
 }
