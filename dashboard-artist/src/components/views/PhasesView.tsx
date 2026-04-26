@@ -212,15 +212,11 @@ export default function PhasesView() {
                   return (
                     <TaskRowInner
                       key={ct.id}
-                      text={ct.text}
+                      text={taskLabels[ct.id] ?? ct.text}
                       isDone={isDone}
                       accent={phase.accent}
                       onToggle={() => toggleTask(ct.id)}
-                      onRename={(newText) => {
-                        // custom tasks rename via addCustomTask replacement not implemented;
-                        // for simplicity reuse taskLabels
-                        setTaskLabel(ct.id, newText);
-                      }}
+                      onRename={(newText) => setTaskLabel(ct.id, newText)}
                       onDelete={() => removeCustomTask(ct.id)}
                     />
                   );

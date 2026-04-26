@@ -1,4 +1,4 @@
-import { useState, useId } from "react";
+import { useState, useEffect, useId } from "react";
 import { C, FONT } from "../../theme";
 import { useStore } from "../../store/useStore";
 import {
@@ -1267,9 +1267,11 @@ export default function KeftaMateshaView() {
 
   const selectedIssue = kmIssues.find((i) => i.id === selectedId) ?? null;
   // If selected issue was deleted, reset
-  if (selectedId && !selectedIssue) {
-    setSelectedId(null);
-  }
+  useEffect(() => {
+    if (selectedId && !selectedIssue) {
+      setSelectedId(null);
+    }
+  }, [selectedId, selectedIssue]);
 
   const publishedCount = kmIssues.filter((i) => i.status === "publie").length;
   const inProgressCount = kmIssues.filter((i) => i.status === "production" || i.status === "finition").length;
