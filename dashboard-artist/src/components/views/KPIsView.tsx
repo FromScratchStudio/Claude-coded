@@ -174,7 +174,7 @@ export default function KPIsView() {
           }
 
           return (
-            <Card key={kpi.key}>
+            <Card key={kpi.key} style={{ position: "relative" }}>
               {/* Confirm delete overlay */}
               {confirmDelete === kpi.key && (
                 <div style={{ position: "absolute", inset: 0, background: `${C.bg}ee`, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "0.75rem", zIndex: 10 }}>

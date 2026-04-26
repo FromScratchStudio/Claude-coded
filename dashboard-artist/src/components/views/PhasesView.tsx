@@ -156,12 +156,10 @@ export default function PhasesView() {
         {PHASES.map((phase) => {
           const phaseCustom = allCustomByPhase[phase.id] ?? [];
           const staticVisible = phase.tasks.filter((t) => !hiddenTasks.includes(t.id));
-          const allIds = [
-            ...staticVisible.map((t) => t.id),
-            ...phaseCustom.map((ct) => ct.id),
-          ];
-          const doneCount = allIds.filter((id) => tasks[id]).length;
-          const total = allIds.length;
+          const doneCount =
+            staticVisible.filter((task) => (tasks[task.id] ?? task.done)).length +
+            phaseCustom.filter((task) => (tasks[task.id] ?? false)).length;
+          const total = staticVisible.length + phaseCustom.length;
           const pct = total > 0 ? Math.round((doneCount / total) * 100) : 0;
           const isComplete = total > 0 && doneCount === total;
 
@@ -214,15 +212,11 @@ export default function PhasesView() {
                   return (
                     <TaskRowInner
                       key={ct.id}
-                      text={ct.text}
+                      text={taskLabels[ct.id] ?? ct.text}
                       isDone={isDone}
                       accent={phase.accent}
                       onToggle={() => toggleTask(ct.id)}
-                      onRename={(newText) => {
-                        // custom tasks rename via addCustomTask replacement not implemented;
-                        // for simplicity reuse taskLabels
-                        setTaskLabel(ct.id, newText);
-                      }}
+                      onRename={(newText) => setTaskLabel(ct.id, newText)}
                       onDelete={() => removeCustomTask(ct.id)}
                     />
                   );

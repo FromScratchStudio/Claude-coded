@@ -265,18 +265,29 @@ export const useStore = create<StoreState & StoreActions>()(
 
       // ── KPI definitions ──────────────────────────────────────────────────────
       addKpiDef: (def) =>
-        set((s) => ({
-          kpiDefs: [...s.kpiDefs, def],
-          kpiValues: { ...s.kpiValues, [def.key]: 0 },
-        })),
+        set((s) => {
+          if (s.kpiDefs.some((d) => d.key === def.key)) {
+            return s;
+          }
+
+          return {
+            kpiDefs: [...s.kpiDefs, def],
+            kpiValues: { ...s.kpiValues, [def.key]: 0 },
+          };
+        }),
       updateKpiDef: (key, updates) =>
         set((s) => ({
           kpiDefs: s.kpiDefs.map((d) => (d.key === key ? { ...d, ...updates } : d)),
         })),
       removeKpiDef: (key) =>
-        set((s) => ({
-          kpiDefs: s.kpiDefs.filter((d) => d.key !== key),
-        })),
+        set((s) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { [key]: _removed, ...remainingKpiValues } = s.kpiValues;
+          return {
+            kpiDefs: s.kpiDefs.filter((d) => d.key !== key),
+            kpiValues: remainingKpiValues,
+          };
+        }),
 
       // ── Phase tasks ──────────────────────────────────────────────────────────
       setTaskLabel: (id, text) =>
