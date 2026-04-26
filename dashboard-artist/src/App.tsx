@@ -12,6 +12,7 @@ import PhasesView from "./components/views/PhasesView";
 import GardeFousView from "./components/views/GardeFousView";
 import ReferentielView from "./components/views/ReferentielView";
 import IdeasView from "./components/views/IdeasView";
+import KeftaMateshaView from "./components/views/KeftaMateshaView";
 import type { ViewId } from "./types";
 
 const VIEWS: Record<ViewId, JSX.Element> = {
@@ -24,6 +25,7 @@ const VIEWS: Record<ViewId, JSX.Element> = {
   "garde-fous": <GardeFousView />,
   referentiel: <ReferentielView />,
   ideas: <IdeasView />,
+  "kefta-matesha": <KeftaMateshaView />,
 };
 
 const variants = {

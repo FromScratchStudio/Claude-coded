@@ -13,6 +13,7 @@ const TABS: { id: ViewId; label: string }[] = [
   { id: "ideas", label: "Idées" },
   { id: "garde-fous", label: "Garde-fous" },
   { id: "referentiel", label: "Référentiel" },
+  { id: "kefta-matesha", label: "Kefta Matesha" },
 ];
 
 export default function TopBar() {
