@@ -88,27 +88,27 @@ export const PRINCIPLES: Principle[] = [
 ];
 
 export const TRAPS: Trap[] = [
-  { label: "Éparpillement par multi-capacité", desc: "Tu peux tout faire. Cela ne signifie pas que tu dois." },
-  { label: "Apprentissage comme évitement", desc: "Apprendre est plus confortable que publier imparfait." },
-  { label: "Sur-collaboration généreuse", desc: "Dire non est plus difficile qu'accepter, mais protège." },
-  { label: "Équipement comme identité", desc: "Devenir « la personne qui a le matériel » est un piège." },
-  { label: "Prestation B2B qui mange tout", desc: "Un contrat de 3 000 € peut sembler prioritaire — c'est faux." },
-  { label: "Épuisement silencieux", desc: "Deux pratiques intenses sans conscience mène au burnout." },
-  { label: "Pensée binaire transition pro", desc: "Le salaire protège ta liberté, il ne la compromet pas." },
-  { label: "Ingénieur·e qui cannibalise l'artiste", desc: "Toute construction technique : besoin documenté, bornée." },
-  { label: "Infrastructure perfectionniste", desc: "Ton piège le plus probable. Publier > infrastructure parfaite." },
-  { label: "Glissement de projet en projet", desc: "Un projet fini vaut dix projets en cours." },
+  { id: "trap-1", label: "Éparpillement par multi-capacité", desc: "Tu peux tout faire. Cela ne signifie pas que tu dois." },
+  { id: "trap-2", label: "Apprentissage comme évitement", desc: "Apprendre est plus confortable que publier imparfait." },
+  { id: "trap-3", label: "Sur-collaboration généreuse", desc: "Dire non est plus difficile qu'accepter, mais protège." },
+  { id: "trap-4", label: "Équipement comme identité", desc: "Devenir « la personne qui a le matériel » est un piège." },
+  { id: "trap-5", label: "Prestation B2B qui mange tout", desc: "Un contrat de 3 000 € peut sembler prioritaire — c'est faux." },
+  { id: "trap-6", label: "Épuisement silencieux", desc: "Deux pratiques intenses sans conscience mène au burnout." },
+  { id: "trap-7", label: "Pensée binaire transition pro", desc: "Le salaire protège ta liberté, il ne la compromet pas." },
+  { id: "trap-8", label: "Ingénieur·e qui cannibalise l'artiste", desc: "Toute construction technique : besoin documenté, bornée." },
+  { id: "trap-9", label: "Infrastructure perfectionniste", desc: "Ton piège le plus probable. Publier > infrastructure parfaite." },
+  { id: "trap-10", label: "Glissement de projet en projet", desc: "Un projet fini vaut dix projets en cours." },
 ];
 
 export const COLLAB_CHECKLIST: CollabCheck[] = [
-  { q: "Univers", text: "Ce projet prolonge-t-il quelque chose de mon univers, ou est-ce 100% celui de l'autre ?" },
-  { q: "Rôle", text: "Co-réalisation / co-production / DP avec crédit fort — ou simple exécution technique ?" },
-  { q: "Durée", text: "Engagement < 10 jours de travail cumulés sur 3 mois ?" },
-  { q: "Contrepartie", text: "Visibilité, crédits, accès audience, droits d'usage — au moins deux ?" },
-  { q: "Matériel", text: "Liste explicite de ce qui est prêté, avec durée, caution, assurance ?" },
-  { q: "Sortie", text: "L'œuvre finale sera-t-elle partageable sur mes canaux ?" },
-  { q: "Réciprocité", text: "Cette personne peut-elle m'apporter quelque chose dans les 12 mois ?" },
-  { q: "Filtre ultime", text: "Si je disais non, le regretterais-je dans un an ?" },
+  { id: "col-1", q: "Univers", text: "Ce projet prolonge-t-il quelque chose de mon univers, ou est-ce 100% celui de l'autre ?" },
+  { id: "col-2", q: "Rôle", text: "Co-réalisation / co-production / DP avec crédit fort — ou simple exécution technique ?" },
+  { id: "col-3", q: "Durée", text: "Engagement < 10 jours de travail cumulés sur 3 mois ?" },
+  { id: "col-4", q: "Contrepartie", text: "Visibilité, crédits, accès audience, droits d'usage — au moins deux ?" },
+  { id: "col-5", q: "Matériel", text: "Liste explicite de ce qui est prêté, avec durée, caution, assurance ?" },
+  { id: "col-6", q: "Sortie", text: "L'œuvre finale sera-t-elle partageable sur mes canaux ?" },
+  { id: "col-7", q: "Réciprocité", text: "Cette personne peut-elle m'apporter quelque chose dans les 12 mois ?" },
+  { id: "col-8", q: "Filtre ultime", text: "Si je disais non, le regretterais-je dans un an ?" },
 ];
 
 export const BUILD_BUDGETS: BuildBudget[] = [
