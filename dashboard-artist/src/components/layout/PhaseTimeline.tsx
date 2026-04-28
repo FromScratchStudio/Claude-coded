@@ -1,14 +1,13 @@
 import { C, FONT } from "../../theme";
 import { useStore } from "../../store/useStore";
-import { PHASES } from "../../data/phases";
 
 export default function PhaseTimeline() {
-  const tasks = useStore((s) => s.tasks);
+  const phases = useStore((s) => s.phases);
 
   // Determine current phase: first phase with incomplete tasks
-  let currentPhase = PHASES.length - 1;
-  for (const phase of PHASES) {
-    const doneCount = phase.tasks.filter((t) => tasks[t.id] ?? t.done).length;
+  let currentPhase = phases.length > 0 ? phases[phases.length - 1].id : 0;
+  for (const phase of phases) {
+    const doneCount = phase.tasks.filter((t) => t.done).length;
     if (doneCount < phase.tasks.length) {
       currentPhase = phase.id;
       break;
@@ -25,10 +24,10 @@ export default function PhaseTimeline() {
         borderBottom: `1px solid ${C.border}`,
       }}
     >
-      {PHASES.map((phase) => {
+      {phases.map((phase) => {
         const isCurrent = phase.id === currentPhase;
         const isPast = phase.id < currentPhase;
-        const doneCount = phase.tasks.filter((t) => tasks[t.id] ?? t.done).length;
+        const doneCount = phase.tasks.filter((t) => t.done).length;
         const pct = Math.round((doneCount / phase.tasks.length) * 100);
 
         return (

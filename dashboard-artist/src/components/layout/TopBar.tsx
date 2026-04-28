@@ -1,6 +1,6 @@
 import { C, FONT } from "../../theme";
 import { useStore } from "../../store/useStore";
-import { DEGRADED_MODES } from "../../data/principles";
+
 import type { ViewId } from "../../types";
 
 const TABS: { id: ViewId; label: string }[] = [
@@ -14,14 +14,17 @@ const TABS: { id: ViewId; label: string }[] = [
   { id: "garde-fous", label: "Garde-fous" },
   { id: "referentiel", label: "Référentiel" },
   { id: "kefta-matesha", label: "Kefta Matesha" },
+  { id: "settings", label: "Réglages" },
+  { id: "user-guide", label: "Guide" },
 ];
 
 export default function TopBar() {
   const activeView = useStore((s) => s.activeView);
   const setActiveView = useStore((s) => s.setActiveView);
   const degradedMode = useStore((s) => s.degradedMode);
+  const degradedModes = useStore((s) => s.degradedModes);
 
-  const activeMode = DEGRADED_MODES.find((m) => m.id === degradedMode);
+  const activeMode = degradedModes.find((m) => m.id === degradedMode);
 
   return (
     <div

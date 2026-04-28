@@ -1,12 +1,16 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { ViewId, Project, Chapter, Quarter, Idea, KMIssue, KMArticle, KpiDef, Heteronym } from "../types";
+import type {
+  ViewId, Project, Chapter, Quarter, Idea, KMIssue, KMArticle, KpiDef, Heteronym,
+  Phase, Task, WorkflowStage, DegradedMode, Principle, Trap, CollabCheck, BuildBudget,
+} from "../types";
 import { PROJECTS_INIT } from "../data/projects";
-import { CHAPTERS_INIT } from "../data/workflow";
+import { CHAPTERS_INIT, WORKFLOW_STAGES } from "../data/workflow";
 import { QUARTER_DEFAULT, KPI_DEFAULTS, KPI_DEFS } from "../data/kpis";
 import { PHASES } from "../data/phases";
 import { KM_ISSUES_SEED } from "../data/km";
 import { HETERONYMS } from "../data/heteronyms";
+import { DEGRADED_MODES, PRINCIPLES, TRAPS, COLLAB_CHECKLIST, BUILD_BUDGETS } from "../data/principles";
 
 // ─── State shape ──────────────────────────────────────────────────────────────
 
@@ -14,28 +18,31 @@ interface StoreState {
   // Navigation
   activeView: ViewId;
 
-  // Durability metrics (Dashboard)
-  energy: number; // 1–10
-  plaisir: number; // 1–10
-  joursEpuises: number; // 0–7
+  // Durability metrics
+  energy: number;
+  plaisir: number;
+  joursEpuises: number;
 
-  // UL weekly tracker (4 rolling weeks, index 3 = current week)
+  // UL weekly tracker
   ulWeek: [number, number, number, number];
 
-  // Degraded mode
+  // Degraded mode key
   degradedMode: string | null;
 
-  // Phase task overrides (taskId → done)
-  tasks: Record<string, boolean>;
+  // Phases — full source of truth (metadata + tasks with done state)
+  phases: Phase[];
 
-  // Projects (user-editable)
+  // Projects
   projects: Project[];
 
-  // KPI current values (key → value)
+  // KPI current values
   kpiValues: Record<string, number>;
 
   // Chapter pipeline
   chapters: Chapter[];
+
+  // Workflow stages
+  workflowStages: WorkflowStage[];
 
   // Quarterly planning
   quarter: Quarter;
@@ -46,16 +53,18 @@ interface StoreState {
   // Kefta Matesha issues
   kmIssues: KMIssue[];
 
-  // KPI definitions (editable)
+  // KPI definitions
   kpiDefs: KpiDef[];
 
-  // Phase task customisation
-  taskLabels: Record<string, string>;           // text overrides for static task IDs
-  customTasks: { phaseId: number; id: string; text: string }[]; // user-added tasks
-  hiddenTasks: string[];                         // static task IDs soft-deleted by user
-
-  // Referentiel heteronyms (editable)
+  // Referentiel heteronyms
   heteronymData: Heteronym[];
+
+  // Garde-fous data (all editable)
+  degradedModes: DegradedMode[];
+  principles: Principle[];
+  traps: Trap[];
+  collabChecklist: CollabCheck[];
+  buildBudgets: BuildBudget[];
 }
 
 // ─── Actions shape ────────────────────────────────────────────────────────────
@@ -68,11 +77,28 @@ interface StoreActions {
   setJoursEpuises: (v: number) => void;
 
   setUlWeek: (fn: (prev: [number, number, number, number]) => [number, number, number, number]) => void;
-  advanceWeek: () => void; // shifts UL history forward by one week
+  advanceWeek: () => void;
 
   setDegradedMode: (mode: string | null) => void;
 
+  // Phase task actions (operate on phases[].tasks)
   toggleTask: (taskId: string) => void;
+  setTaskLabel: (taskId: string, text: string) => void;
+  addCustomTask: (phaseId: number, text: string) => void;
+  removeTask: (taskId: string) => void;
+  // aliases kept for backward compat
+  removeCustomTask: (id: string) => void;
+  hideTask: (id: string) => void;
+
+  // Phase CRUD
+  addPhase: (phase: Omit<Phase, "id">) => void;
+  updatePhase: (id: number, updates: Partial<Omit<Phase, "id" | "tasks">>) => void;
+  removePhase: (id: number) => void;
+
+  // Workflow stage CRUD
+  addWorkflowStage: (stage: Omit<WorkflowStage, "id">) => void;
+  updateWorkflowStage: (id: number, updates: Partial<Omit<WorkflowStage, "id">>) => void;
+  removeWorkflowStage: (id: number) => void;
 
   updateProject: (id: string, updates: Partial<Omit<Project, "id">>) => void;
   addProject: (project: Project) => void;
@@ -91,7 +117,7 @@ interface StoreActions {
   addIdea: (idea: Idea) => void;
   updateIdea: (id: string, updates: Partial<Omit<Idea, "id">>) => void;
   removeIdea: (id: string) => void;
-  advanceIdea: (id: string) => void; // raw → sorted → selected
+  advanceIdea: (id: string) => void;
 
   // Kefta Matesha
   addKMIssue: (issue: KMIssue) => void;
@@ -106,21 +132,39 @@ interface StoreActions {
   updateKpiDef: (key: string, updates: Partial<Omit<KpiDef, "key">>) => void;
   removeKpiDef: (key: string) => void;
 
-  // Phase tasks
-  setTaskLabel: (id: string, text: string) => void;
-  addCustomTask: (phaseId: number, text: string) => void;
-  removeCustomTask: (id: string) => void;
-  hideTask: (id: string) => void;
-
   // Referentiel
   updateHeteronym: (id: string, updates: Partial<Heteronym>) => void;
+
+  // Garde-fous CRUD
+  addDegradedMode: (mode: DegradedMode) => void;
+  updateDegradedMode: (id: string, updates: Partial<Omit<DegradedMode, "id">>) => void;
+  removeDegradedMode: (id: string) => void;
+
+  addPrinciple: (principle: Principle) => void;
+  updatePrinciple: (n: string, updates: Partial<Omit<Principle, "n">>) => void;
+  removePrinciple: (n: string) => void;
+
+  addTrap: (trap: Trap) => void;
+  updateTrap: (id: string, updates: Partial<Omit<Trap, "id">>) => void;
+  removeTrap: (id: string) => void;
+
+  addCollabCheck: (check: CollabCheck) => void;
+  updateCollabCheck: (id: string, updates: Partial<Omit<CollabCheck, "id">>) => void;
+  removeCollabCheck: (id: string) => void;
+
+  addBuildBudget: (budget: BuildBudget) => void;
+  updateBuildBudget: (idx: number, updates: Partial<BuildBudget>) => void;
+  removeBuildBudget: (idx: number) => void;
+
+  // Settings
+  importState: (data: Partial<StoreState>) => void;
 }
 
 // ─── Initial state ────────────────────────────────────────────────────────────
 
-const initialTasksState: Record<string, boolean> = Object.fromEntries(
-  PHASES.flatMap((p) => p.tasks.map((t) => [t.id, t.done]))
-);
+function genId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
 
 const initialState: StoreState = {
   activeView: "dashboard",
@@ -129,18 +173,21 @@ const initialState: StoreState = {
   joursEpuises: 0,
   ulWeek: [3, 4, 3, 0],
   degradedMode: null,
-  tasks: initialTasksState,
+  phases: PHASES,
   projects: PROJECTS_INIT,
   kpiValues: KPI_DEFAULTS,
   chapters: CHAPTERS_INIT,
+  workflowStages: WORKFLOW_STAGES,
   quarter: QUARTER_DEFAULT,
   ideas: [],
   kmIssues: KM_ISSUES_SEED,
   kpiDefs: KPI_DEFS,
-  taskLabels: {},
-  customTasks: [],
-  hiddenTasks: [],
   heteronymData: HETERONYMS,
+  degradedModes: DEGRADED_MODES,
+  principles: PRINCIPLES,
+  traps: TRAPS,
+  collabChecklist: COLLAB_CHECKLIST,
+  buildBudgets: BUILD_BUDGETS,
 };
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -162,10 +209,89 @@ export const useStore = create<StoreState & StoreActions>()(
 
       setDegradedMode: (mode) => set({ degradedMode: mode }),
 
+      // ── Phase task actions (operate on phases[].tasks) ────────────────────
       toggleTask: (taskId) =>
         set((s) => ({
-          tasks: { ...s.tasks, [taskId]: !s.tasks[taskId] },
+          phases: s.phases.map((p) => ({
+            ...p,
+            tasks: p.tasks.map((t) =>
+              t.id === taskId ? { ...t, done: !t.done } : t
+            ),
+          })),
         })),
+
+      setTaskLabel: (taskId, text) =>
+        set((s) => ({
+          phases: s.phases.map((p) => ({
+            ...p,
+            tasks: p.tasks.map((t) =>
+              t.id === taskId ? { ...t, text } : t
+            ),
+          })),
+        })),
+
+      addCustomTask: (phaseId, text) => {
+        const id = `ct-${genId()}`;
+        set((s) => ({
+          phases: s.phases.map((p) =>
+            p.id === phaseId
+              ? { ...p, tasks: [...p.tasks, { id, text, done: false }] }
+              : p
+          ),
+        }));
+      },
+
+      removeTask: (taskId) =>
+        set((s) => ({
+          phases: s.phases.map((p) => ({
+            ...p,
+            tasks: p.tasks.filter((t) => t.id !== taskId),
+          })),
+        })),
+
+      removeCustomTask: (id) =>
+        set((s) => ({
+          phases: s.phases.map((p) => ({
+            ...p,
+            tasks: p.tasks.filter((t) => t.id !== id),
+          })),
+        })),
+
+      hideTask: (id) =>
+        set((s) => ({
+          phases: s.phases.map((p) => ({
+            ...p,
+            tasks: p.tasks.filter((t) => t.id !== id),
+          })),
+        })),
+
+      // ── Phase CRUD ────────────────────────────────────────────────────────
+      addPhase: (phase) =>
+        set((s) => {
+          const newId = Math.max(0, ...s.phases.map((p) => p.id)) + 1;
+          return { phases: [...s.phases, { ...phase, id: newId }] };
+        }),
+      updatePhase: (id, updates) =>
+        set((s) => ({
+          phases: s.phases.map((p) => (p.id === id ? { ...p, ...updates } : p)),
+        })),
+      removePhase: (id) =>
+        set((s) => ({ phases: s.phases.filter((p) => p.id !== id) })),
+
+      // ── Workflow stage CRUD ───────────────────────────────────────────────
+      addWorkflowStage: (stage) =>
+        set((s) => {
+          const newId = Math.max(0, ...s.workflowStages.map((ws) => ws.id)) + 1;
+          return { workflowStages: [...s.workflowStages, { ...stage, id: newId }] };
+        }),
+      updateWorkflowStage: (id, updates) =>
+        set((s) => ({
+          workflowStages: s.workflowStages.map((ws) =>
+            ws.id === id ? { ...ws, ...updates } : ws
+          ),
+        })),
+      removeWorkflowStage: (id) =>
+        set((s) => ({ workflowStages: s.workflowStages.filter((ws) => ws.id !== id) })),
 
       updateProject: (id, updates) =>
         set((s) => ({
@@ -266,10 +392,7 @@ export const useStore = create<StoreState & StoreActions>()(
       // ── KPI definitions ──────────────────────────────────────────────────────
       addKpiDef: (def) =>
         set((s) => {
-          if (s.kpiDefs.some((d) => d.key === def.key)) {
-            return s;
-          }
-
+          if (s.kpiDefs.some((d) => d.key === def.key)) return s;
           return {
             kpiDefs: [...s.kpiDefs, def],
             kpiValues: { ...s.kpiValues, [def.key]: 0 },
@@ -289,30 +412,6 @@ export const useStore = create<StoreState & StoreActions>()(
           };
         }),
 
-      // ── Phase tasks ──────────────────────────────────────────────────────────
-      setTaskLabel: (id, text) =>
-        set((s) => ({ taskLabels: { ...s.taskLabels, [id]: text } })),
-      addCustomTask: (phaseId, text) => {
-        const id = `ct-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-        set((s) => ({
-          customTasks: [...s.customTasks, { phaseId, id, text }],
-          tasks: { ...s.tasks, [id]: false },
-        }));
-      },
-      removeCustomTask: (id) =>
-        set((s) => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { [id]: _removed, ...remainingTasks } = s.tasks;
-          return {
-            customTasks: s.customTasks.filter((t) => t.id !== id),
-            tasks: remainingTasks,
-          };
-        }),
-      hideTask: (id) =>
-        set((s) => ({
-          hiddenTasks: s.hiddenTasks.includes(id) ? s.hiddenTasks : [...s.hiddenTasks, id],
-        })),
-
       // ── Referentiel ──────────────────────────────────────────────────────────
       updateHeteronym: (id, updates) =>
         set((s) => ({
@@ -320,11 +419,67 @@ export const useStore = create<StoreState & StoreActions>()(
             h.id === id ? { ...h, ...updates } : h
           ),
         })),
+
+      // ── Garde-fous CRUD ──────────────────────────────────────────────────────
+      addDegradedMode: (mode) =>
+        set((s) => ({ degradedModes: [...s.degradedModes, mode] })),
+      updateDegradedMode: (id, updates) =>
+        set((s) => ({
+          degradedModes: s.degradedModes.map((m) =>
+            m.id === id ? { ...m, ...updates } : m
+          ),
+        })),
+      removeDegradedMode: (id) =>
+        set((s) => ({ degradedModes: s.degradedModes.filter((m) => m.id !== id) })),
+
+      addPrinciple: (principle) =>
+        set((s) => ({ principles: [...s.principles, principle] })),
+      updatePrinciple: (n, updates) =>
+        set((s) => ({
+          principles: s.principles.map((p) =>
+            p.n === n ? { ...p, ...updates } : p
+          ),
+        })),
+      removePrinciple: (n) =>
+        set((s) => ({ principles: s.principles.filter((p) => p.n !== n) })),
+
+      addTrap: (trap) =>
+        set((s) => ({ traps: [...s.traps, trap] })),
+      updateTrap: (id, updates) =>
+        set((s) => ({
+          traps: s.traps.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+        })),
+      removeTrap: (id) =>
+        set((s) => ({ traps: s.traps.filter((t) => t.id !== id) })),
+
+      addCollabCheck: (check) =>
+        set((s) => ({ collabChecklist: [...s.collabChecklist, check] })),
+      updateCollabCheck: (id, updates) =>
+        set((s) => ({
+          collabChecklist: s.collabChecklist.map((c) =>
+            c.id === id ? { ...c, ...updates } : c
+          ),
+        })),
+      removeCollabCheck: (id) =>
+        set((s) => ({ collabChecklist: s.collabChecklist.filter((c) => c.id !== id) })),
+
+      addBuildBudget: (budget) =>
+        set((s) => ({ buildBudgets: [...s.buildBudgets, budget] })),
+      updateBuildBudget: (idx, updates) =>
+        set((s) => ({
+          buildBudgets: s.buildBudgets.map((b, i) =>
+            i === idx ? { ...b, ...updates } : b
+          ),
+        })),
+      removeBuildBudget: (idx) =>
+        set((s) => ({ buildBudgets: s.buildBudgets.filter((_, i) => i !== idx) })),
+
+      // ── Settings ──────────────────────────────────────────────────────────────
+      importState: (data) => set((s) => ({ ...s, ...data })),
     }),
     {
-      name: "stratex-dashboard-v1",
+      name: "stratex-dashboard-v2",
       storage: createJSONStorage(() => localStorage),
-      // Persist all user-modifiable data, including active view for session continuity
       partialize: (state) => ({
         activeView: state.activeView,
         energy: state.energy,
@@ -332,18 +487,21 @@ export const useStore = create<StoreState & StoreActions>()(
         joursEpuises: state.joursEpuises,
         ulWeek: state.ulWeek,
         degradedMode: state.degradedMode,
-        tasks: state.tasks,
+        phases: state.phases,
         projects: state.projects,
         kpiValues: state.kpiValues,
         chapters: state.chapters,
+        workflowStages: state.workflowStages,
         quarter: state.quarter,
         ideas: state.ideas,
         kmIssues: state.kmIssues,
         kpiDefs: state.kpiDefs,
-        taskLabels: state.taskLabels,
-        customTasks: state.customTasks,
-        hiddenTasks: state.hiddenTasks,
         heteronymData: state.heteronymData,
+        degradedModes: state.degradedModes,
+        principles: state.principles,
+        traps: state.traps,
+        collabChecklist: state.collabChecklist,
+        buildBudgets: state.buildBudgets,
       }),
     }
   )

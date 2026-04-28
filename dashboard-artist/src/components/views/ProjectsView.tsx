@@ -2,7 +2,6 @@ import { useState } from "react";
 import { C, FONT } from "../../theme";
 import { useStore } from "../../store/useStore";
 import { RINGS, STATUS_META, PRIORITY_META } from "../../data/projects";
-import { PHASES } from "../../data/phases";
 import Card from "../ui/Card";
 import SectionTitle from "../ui/SectionTitle";
 import ProgressBar from "../ui/ProgressBar";
@@ -22,6 +21,7 @@ interface ProjectFormProps {
 }
 
 function ProjectForm({ initial, onSave, onCancel }: ProjectFormProps) {
+  const phases = useStore((s) => s.phases);
   const [name, setName] = useState(initial?.name ?? "");
   const [ring, setRing] = useState<RingId>(initial?.ring ?? "centre");
   const [phase, setPhase] = useState(initial?.phase ?? 0);
@@ -73,7 +73,7 @@ function ProjectForm({ initial, onSave, onCancel }: ProjectFormProps) {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
         <select value={phase} onChange={(e) => setPhase(Number(e.target.value))} style={selectStyle}>
-          {PHASES.map((p) => <option key={p.id} value={p.id}>{p.label} — {p.name}</option>)}
+          {phases.map((p) => <option key={p.id} value={p.id}>{p.label} — {p.name}</option>)}
         </select>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <input
@@ -105,6 +105,7 @@ function ProjectForm({ initial, onSave, onCancel }: ProjectFormProps) {
 
 export default function ProjectsView() {
   const projects = useStore((s) => s.projects);
+  const phases = useStore((s) => s.phases);
   const addProject = useStore((s) => s.addProject);
   const updateProject = useStore((s) => s.updateProject);
   const removeProject = useStore((s) => s.removeProject);
@@ -207,7 +208,7 @@ export default function ProjectsView() {
                       <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
                         <StatusBadge status={project.status} />
                         {ring && <Tag color={ring.color}>{ring.label}</Tag>}
-                        <Tag color={PHASES[project.phase]?.accent}>{PHASES[project.phase]?.label ?? ""}</Tag>
+                        <Tag color={phases.find((p) => p.id === project.phase)?.accent}>{phases.find((p) => p.id === project.phase)?.label ?? ""}</Tag>
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: "0.25rem" }}>

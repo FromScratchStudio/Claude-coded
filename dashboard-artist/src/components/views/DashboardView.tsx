@@ -1,8 +1,7 @@
 import { C, FONT } from "../../theme";
 import { useStore } from "../../store/useStore";
 import { RINGS } from "../../data/projects";
-import { PHASES } from "../../data/phases";
-import { DEGRADED_MODES } from "../../data/principles";
+
 import { computeBank, countHooks } from "../../data/workflow";
 import Card from "../ui/Card";
 import SectionTitle from "../ui/SectionTitle";
@@ -20,15 +19,16 @@ export default function DashboardView() {
   const setUlWeek = useStore((s) => s.setUlWeek);
   const degradedMode = useStore((s) => s.degradedMode);
   const setDegradedMode = useStore((s) => s.setDegradedMode);
-  const tasks = useStore((s) => s.tasks);
+  const phases = useStore((s) => s.phases);
+  const degradedModes = useStore((s) => s.degradedModes);
   const projects = useStore((s) => s.projects);
   const chapters = useStore((s) => s.chapters);
   const ideas = useStore((s) => s.ideas);
   const quarter = useStore((s) => s.quarter);
   const setActiveView = useStore((s) => s.setActiveView);
 
-  const allTasks = PHASES.flatMap((p) => p.tasks);
-  const doneTasks = allTasks.filter((t) => tasks[t.id] ?? t.done).length;
+  const allTasks = phases.flatMap((p) => p.tasks);
+  const doneTasks = allTasks.filter((t) => t.done).length;
   const activeProjects = projects.filter((p) => p.status === "active").length;
   const bank = computeBank(chapters);
   const hooks = countHooks(chapters);
@@ -202,7 +202,7 @@ export default function DashboardView() {
           >
             <span style={{ fontSize: "0.7rem", color: !degradedMode ? C.green : C.textMuted }}>✓ Régime normal</span>
           </button>
-          {DEGRADED_MODES.map((mode) => (
+          {degradedModes.map((mode) => (
             <button
               key={mode.id}
               type="button"

@@ -10,7 +10,9 @@ export type ViewId =
   | "garde-fous"
   | "referentiel"
   | "ideas"
-  | "kefta-matesha";
+  | "kefta-matesha"
+  | "settings"
+  | "user-guide";
 
 // ─── Roadmap ──────────────────────────────────────────────────────────────────
 
@@ -151,11 +153,13 @@ export interface Principle {
 }
 
 export interface Trap {
+  id: string;
   label: string;
   desc: string;
 }
 
 export interface CollabCheck {
+  id: string;
   q: string;
   text: string;
 }
