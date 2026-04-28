@@ -3,7 +3,7 @@ import { C, FONT } from "../../theme";
 import { useStore } from "../../store/useStore";
 import Card from "../ui/Card";
 import SectionTitle from "../ui/SectionTitle";
-import type { DegradedMode, Trap, CollabCheck, BuildBudget } from "../../types";
+import type { DegradedMode } from "../../types";
 
 type Tab = "modes" | "principles" | "traps" | "collab" | "budget";
 
