@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type {
   ViewId, Project, Chapter, Quarter, Idea, KMIssue, KMArticle, KpiDef, Heteronym,
-  Phase, Task, WorkflowStage, DegradedMode, Principle, Trap, CollabCheck, BuildBudget,
+  Phase, WorkflowStage, DegradedMode, Principle, Trap, CollabCheck, BuildBudget,
 } from "../types";
 import { PROJECTS_INIT } from "../data/projects";
 import { CHAPTERS_INIT, WORKFLOW_STAGES } from "../data/workflow";
