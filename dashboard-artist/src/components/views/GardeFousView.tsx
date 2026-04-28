@@ -3,7 +3,7 @@ import { C, FONT } from "../../theme";
 import { useStore } from "../../store/useStore";
 import Card from "../ui/Card";
 import SectionTitle from "../ui/SectionTitle";
-import type { DegradedMode, Principle, Trap, CollabCheck, BuildBudget } from "../../types";
+import type { DegradedMode, Trap, CollabCheck, BuildBudget } from "../../types";
 
 type Tab = "modes" | "principles" | "traps" | "collab" | "budget";
 
@@ -266,7 +266,9 @@ export default function GardeFousView() {
             {principles.map((p) => (
               <Card key={p.n}>
                 <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
-                  <InlineEdit value={p.n} onSave={(v) => updatePrinciple(p.n, { n: v } as Partial<Omit<Principle, "n">>)} style={{ fontFamily: FONT.display, fontSize: "1.4rem", color: C.gold, lineHeight: 1, minWidth: 28 }} />
+                  <span style={{ fontFamily: FONT.display, fontSize: "1.4rem", color: C.gold, lineHeight: 1, minWidth: 28, flexShrink: 0 }} title="Identifiant du principe">
+                    {p.n}
+                  </span>
                   <div style={{ flex: 1 }}>
                     <InlineEdit value={p.text} onSave={(v) => updatePrinciple(p.n, { text: v })} style={{ fontSize: "0.82rem", color: C.text, lineHeight: 1.5, display: "block", marginBottom: (p.note || p.quote) ? "0.4rem" : 0 }} multiline />
                     {p.note !== undefined && (

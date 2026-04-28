@@ -85,6 +85,11 @@ export default function SettingsView() {
     const parsed = (fileRef.current as any)?._parsedData;
     if (!parsed) return;
     try {
+      if (parsed._version !== 2) {
+        setImportStatus("error");
+        setImportMsg(`Version de sauvegarde incompatible (attendu : v2, reçu : ${parsed._version ?? "inconnue"}).`);
+        return;
+      }
       importState(parsed);
       setImportStatus("success");
       setImportMsg("Données importées avec succès. L'état a été fusionné.");

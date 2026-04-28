@@ -316,7 +316,7 @@ export default function PipelineView() {
       {showStagesPanel && <StagesPanel onClose={() => setShowStagesPanel(false)} />}
 
       {/* Stages reference grid */}
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(stages.length, 6)}, 1fr)`, gap: "0.5rem", marginBottom: "1.5rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.max(1, Math.min(stages.length, 6))}, 1fr)`, gap: "0.5rem", marginBottom: "1.5rem" }}>
         {stages.map((stage, idx) => {
           const color = stageColor(idx);
           const count = chapters.filter((c) => c.stage === stage.id).length;

@@ -183,6 +183,7 @@ export default function ProjectsView() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1rem" }}>
         {filtered.map((project) => {
           const ring = RINGS.find((r) => r.id === project.ring);
+          const phaseObj = phases.find((p) => p.id === project.phase);
           const isEditing = editingId === project.id;
 
           return (
@@ -208,7 +209,7 @@ export default function ProjectsView() {
                       <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
                         <StatusBadge status={project.status} />
                         {ring && <Tag color={ring.color}>{ring.label}</Tag>}
-                        <Tag color={phases.find((p) => p.id === project.phase)?.accent}>{phases.find((p) => p.id === project.phase)?.label ?? ""}</Tag>
+                        <Tag color={phaseObj?.accent}>{phaseObj?.label ?? ""}</Tag>
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: "0.25rem" }}>

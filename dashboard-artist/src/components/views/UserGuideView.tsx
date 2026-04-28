@@ -1,24 +1,12 @@
 import { useState } from "react";
+import type { ViewId } from "../../types";
 import { C, FONT } from "../../theme";
 import { useStore } from "../../store/useStore";
 import Card from "../ui/Card";
 import SectionTitle from "../ui/SectionTitle";
 
-type ViewId =
-  | "dashboard"
-  | "trimestre"
-  | "pipeline"
-  | "projects"
-  | "kpis"
-  | "phases"
-  | "ideas"
-  | "garde-fous"
-  | "referentiel"
-  | "kefta-matesha"
-  | "settings";
-
 interface Section {
-  id: ViewId;
+  id: Exclude<ViewId, "user-guide">;
   label: string;
   icon: string;
   color: string;
@@ -283,7 +271,7 @@ const SECTIONS: Section[] = [
 
 export default function UserGuideView() {
   const setActiveView = useStore((s) => s.setActiveView);
-  const [active, setActive] = useState<ViewId | null>(null);
+  const [active, setActive] = useState<Exclude<ViewId, "user-guide"> | null>(null);
 
   return (
     <div>
@@ -346,7 +334,7 @@ export default function UserGuideView() {
               </div>
               <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
                 <button
-                  onClick={() => setActiveView(section.id as any)}
+                  onClick={() => setActiveView(section.id)}
                   style={{ background: section.color, border: "none", color: "#000", borderRadius: 6, padding: "0.35rem 0.85rem", fontSize: "0.68rem", fontFamily: FONT.mono, cursor: "pointer", fontWeight: "bold" }}
                 >
                   → Ouvrir

@@ -276,7 +276,24 @@ export const useStore = create<StoreState & StoreActions>()(
           phases: s.phases.map((p) => (p.id === id ? { ...p, ...updates } : p)),
         })),
       removePhase: (id) =>
-        set((s) => ({ phases: s.phases.filter((p) => p.id !== id) })),
+        set((s) => {
+          const phaseToRemove = s.phases.find((p) => p.id === id);
+          if (!phaseToRemove) return s;
+          const remainingPhases = s.phases.filter((p) => p.id !== id);
+          if (remainingPhases.length === 0) return s;
+          const fallbackPhaseId = remainingPhases.reduce((closest, phase) => {
+            if (closest === null) return phase.id;
+            return Math.abs(phase.id - id) < Math.abs(closest - id) ? phase.id : closest;
+          }, null as number | null);
+          return {
+            phases: remainingPhases,
+            projects: s.projects.map((project) =>
+              project.phase === id && fallbackPhaseId !== null
+                ? { ...project, phase: fallbackPhaseId }
+                : project
+            ),
+          };
+        }),
 
       // ── Workflow stage CRUD ───────────────────────────────────────────────
       addWorkflowStage: (stage) =>
@@ -291,7 +308,11 @@ export const useStore = create<StoreState & StoreActions>()(
           ),
         })),
       removeWorkflowStage: (id) =>
-        set((s) => ({ workflowStages: s.workflowStages.filter((ws) => ws.id !== id) })),
+        set((s) => {
+          const hasAssignedChapters = s.chapters.some((chapter) => chapter.stage === id);
+          if (hasAssignedChapters) return s;
+          return { workflowStages: s.workflowStages.filter((ws) => ws.id !== id) };
+        }),
 
       updateProject: (id, updates) =>
         set((s) => ({
@@ -475,11 +496,45 @@ export const useStore = create<StoreState & StoreActions>()(
         set((s) => ({ buildBudgets: s.buildBudgets.filter((_, i) => i !== idx) })),
 
       // ── Settings ──────────────────────────────────────────────────────────────
-      importState: (data) => set((s) => ({ ...s, ...data })),
+      importState: (data) =>
+        set((s) => {
+          const ALLOWED_KEYS: (keyof StoreState)[] = [
+            "activeView", "energy", "plaisir", "joursEpuises", "ulWeek",
+            "degradedMode", "phases", "projects", "kpiValues", "chapters",
+            "workflowStages", "quarter", "ideas", "kmIssues", "kpiDefs",
+            "heteronymData", "degradedModes", "principles", "traps",
+            "collabChecklist", "buildBudgets",
+          ];
+          const VALID_VIEW_IDS: ViewId[] = [
+            "dashboard", "pipeline", "projects", "kpis", "trimestre", "phases",
+            "garde-fous", "referentiel", "ideas", "kefta-matesha", "settings", "user-guide",
+          ];
+          const safe: Partial<StoreState> = {};
+          for (const key of ALLOWED_KEYS) {
+            if (key in data) {
+              if (key === "activeView") {
+                const v = (data as Record<string, unknown>)[key];
+                if (typeof v === "string" && VALID_VIEW_IDS.includes(v as ViewId)) {
+                  safe.activeView = v as ViewId;
+                }
+              } else {
+                (safe as Record<string, unknown>)[key] = (data as Record<string, unknown>)[key];
+              }
+            }
+          }
+          return { ...s, ...safe };
+        }),
     }),
     {
       name: "stratex-dashboard-v2",
-      storage: createJSONStorage(() => localStorage),
+      version: 2,
+      storage: createJSONStorage(() => ({
+        getItem: (name: string) =>
+          localStorage.getItem(name) ?? localStorage.getItem("stratex-dashboard-v1"),
+        setItem: (name: string, value: string) => localStorage.setItem(name, value),
+        removeItem: (name: string) => localStorage.removeItem(name),
+      })),
+      migrate: (persistedState) => persistedState as StoreState,
       partialize: (state) => ({
         activeView: state.activeView,
         energy: state.energy,
