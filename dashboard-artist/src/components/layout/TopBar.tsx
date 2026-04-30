@@ -6,6 +6,7 @@ import type { ViewId } from "../../types";
 const TABS: { id: ViewId; label: string }[] = [
   { id: "dashboard", label: "Vue d'ensemble" },
   { id: "trimestre", label: "Trimestre" },
+  { id: "weekly-calendar", label: "Agenda" },
   { id: "pipeline", label: "Pipeline" },
   { id: "projects", label: "Projets" },
   { id: "kpis", label: "KPIs" },

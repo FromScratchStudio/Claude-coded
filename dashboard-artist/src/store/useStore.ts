@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import type {
   ViewId, Project, Chapter, Quarter, Idea, KMIssue, KMArticle, KpiDef, Heteronym,
   Phase, WorkflowStage, DegradedMode, Principle, Trap, CollabCheck, BuildBudget,
+  ScheduleSlot,
 } from "../types";
 import { PROJECTS_INIT } from "../data/projects";
 import { CHAPTERS_INIT, WORKFLOW_STAGES } from "../data/workflow";
@@ -65,6 +66,15 @@ interface StoreState {
   traps: Trap[];
   collabChecklist: CollabCheck[];
   buildBudgets: BuildBudget[];
+
+  // Strategy-level dates
+  strategyStartDate: string;          // ISO date string
+  strategyEstimatedEndDate: string;   // ISO date string
+
+  // Weekly calendar schedule
+  scheduleSlots: ScheduleSlot[];
+  /** Durée par défaut d'un créneau en minutes (régime normal). Défaut : 90 (1h30). */
+  defaultSlotDurationMin: number;
 }
 
 // ─── Actions shape ────────────────────────────────────────────────────────────
@@ -158,6 +168,17 @@ interface StoreActions {
 
   // Settings
   importState: (data: Partial<StoreState>) => void;
+
+  // Strategy dates
+  setStrategyStartDate: (date: string) => void;
+  setStrategyEstimatedEndDate: (date: string) => void;
+
+  // Schedule slots
+  addScheduleSlot: (slot: Omit<ScheduleSlot, "id">) => void;
+  updateScheduleSlot: (id: string, updates: Partial<Omit<ScheduleSlot, "id">>) => void;
+  removeScheduleSlot: (id: string) => void;
+  clearWeekSlots: (weekKey: string) => void;
+  setDefaultSlotDurationMin: (min: number) => void;
 }
 
 // ─── Initial state ────────────────────────────────────────────────────────────
@@ -188,6 +209,10 @@ const initialState: StoreState = {
   traps: TRAPS,
   collabChecklist: COLLAB_CHECKLIST,
   buildBudgets: BUILD_BUDGETS,
+  strategyStartDate: "2025-01-01",
+  strategyEstimatedEndDate: "2027-12-31",
+  scheduleSlots: [],
+  defaultSlotDurationMin: 90,
 };
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -495,6 +520,22 @@ export const useStore = create<StoreState & StoreActions>()(
       removeBuildBudget: (idx) =>
         set((s) => ({ buildBudgets: s.buildBudgets.filter((_, i) => i !== idx) })),
 
+      // ── Strategy dates ────────────────────────────────────────────────────
+      setStrategyStartDate: (date) => set({ strategyStartDate: date }),
+      setStrategyEstimatedEndDate: (date) => set({ strategyEstimatedEndDate: date }),
+
+      // ── Schedule slots ──────────────────────────────────────────────────────
+      addScheduleSlot: (slot) =>
+        set((s) => ({ scheduleSlots: [...s.scheduleSlots, { ...slot, id: genId() }] })),
+      updateScheduleSlot: (id, updates) =>
+        set((s) => ({ scheduleSlots: s.scheduleSlots.map((sl) => sl.id === id ? { ...sl, ...updates } : sl) })),
+      removeScheduleSlot: (id) =>
+        set((s) => ({ scheduleSlots: s.scheduleSlots.filter((sl) => sl.id !== id) })),
+      clearWeekSlots: (weekKey) =>
+        set((s) => ({ scheduleSlots: s.scheduleSlots.filter((sl) => sl.weekKey !== weekKey) })),
+
+      setDefaultSlotDurationMin: (min) => set({ defaultSlotDurationMin: min }),
+
       // ── Settings ──────────────────────────────────────────────────────────────
       importState: (data) =>
         set((s) => {
@@ -504,6 +545,8 @@ export const useStore = create<StoreState & StoreActions>()(
             "workflowStages", "quarter", "ideas", "kmIssues", "kpiDefs",
             "heteronymData", "degradedModes", "principles", "traps",
             "collabChecklist", "buildBudgets",
+            "strategyStartDate", "strategyEstimatedEndDate",
+            "scheduleSlots", "defaultSlotDurationMin",
           ];
           const VALID_VIEW_IDS: ViewId[] = [
             "dashboard", "pipeline", "projects", "kpis", "trimestre", "phases",

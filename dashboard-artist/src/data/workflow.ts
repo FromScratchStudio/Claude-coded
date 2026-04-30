@@ -88,6 +88,8 @@ export const CHAPTERS_INIT: Chapter[] = [
     gates: [true, true, true, true],
     lastUpdate: "il y a 2 sem.",
     hook: "Scène d'ouverture supporte un trailer atmosphérique",
+    startDate: "2025-01-01",
+    estimatedEndDate: "2025-01-28",
   },
   {
     id: "ch2",
@@ -96,6 +98,8 @@ export const CHAPTERS_INIT: Chapter[] = [
     gates: [true, true, false, false],
     lastUpdate: "il y a 3 jours",
     hook: "Séquence centrale → motion comic autonome possible",
+    startDate: "2025-02-01",
+    estimatedEndDate: "2025-02-25",
   },
   {
     id: "ch3",

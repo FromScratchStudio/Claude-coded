@@ -5,6 +5,7 @@ export const DEGRADED_MODES: DegradedMode[] = [
     id: "crunch",
     label: "Crunch professionnel",
     color: "#EF4444",
+    slotDurationMin: 45,
     trigger: "Le travail salarié mange le temps du soir et la disponibilité cognitive",
     rules: [
       "Suspendre les UT du soir (zéro production en semaine)",
@@ -18,6 +19,7 @@ export const DEGRADED_MODES: DegradedMode[] = [
     id: "conges",
     label: "Congés",
     color: "#F59E0B",
+    slotDurationMin: 45,
     trigger: "Période de congé professionnel — repos ou créneau privilégié",
     rules: [
       "Si repos : arrêt complet (créatif inclus)",
@@ -30,6 +32,7 @@ export const DEGRADED_MODES: DegradedMode[] = [
     id: "maladie",
     label: "Maladie / épuisement",
     color: "#8B5CF6",
+    slotDurationMin: 45,
     trigger: "Maladie, épuisement physique ou mental",
     rules: [
       "Arrêt total créatif et publication",
@@ -43,6 +46,7 @@ export const DEGRADED_MODES: DegradedMode[] = [
     id: "vie",
     label: "Événement de vie",
     color: "#06B6D4",
+    slotDurationMin: 45,
     trigger: "Deuil, naissance, déménagement, crise familiale, etc.",
     rules: [
       "Suspension sans culpabilité, durée non chiffrée",

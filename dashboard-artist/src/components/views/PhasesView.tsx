@@ -51,9 +51,11 @@ function PhaseEditorModal({ phase, onClose }: { phase: Phase; onClose: () => voi
   const [months, setMonths] = useState(phase.months);
   const [color, setColor] = useState(phase.color);
   const [accent, setAccent] = useState(phase.accent);
+  const [startDate, setStartDate] = useState(phase.startDate ?? "");
+  const [estimatedEndDate, setEstimatedEndDate] = useState(phase.estimatedEndDate ?? "");
 
   function save() {
-    updatePhase(phase.id, { label, name, months, color, accent });
+    updatePhase(phase.id, { label, name, months, color, accent, startDate: startDate || undefined, estimatedEndDate: estimatedEndDate || undefined });
     onClose();
   }
 
@@ -76,6 +78,16 @@ function PhaseEditorModal({ phase, onClose }: { phase: Phase; onClose: () => voi
         <div>
           <label style={{ fontSize: "0.62rem", color: C.textDim, fontFamily: FONT.mono, display: "block", marginBottom: "0.2rem" }}>Période (ex: Mois 1–4)</label>
           <input value={months} onChange={(e) => setMonths(e.target.value)} style={inp} />
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+          <div>
+            <label style={{ fontSize: "0.62rem", color: C.textDim, fontFamily: FONT.mono, display: "block", marginBottom: "0.2rem" }}>Date de début</label>
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={inp} />
+          </div>
+          <div>
+            <label style={{ fontSize: "0.62rem", color: C.textDim, fontFamily: FONT.mono, display: "block", marginBottom: "0.2rem" }}>Fin estimée</label>
+            <input type="date" value={estimatedEndDate} onChange={(e) => setEstimatedEndDate(e.target.value)} style={inp} />
+          </div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
           <div>
@@ -110,10 +122,12 @@ function AddPhaseModal({ onClose }: { onClose: () => void }) {
   const [months, setMonths] = useState("");
   const [color, setColor] = useState("#6B7280");
   const [accent, setAccent] = useState("#9CA3AF");
+  const [startDate, setStartDate] = useState("");
+  const [estimatedEndDate, setEstimatedEndDate] = useState("");
 
   function save() {
     if (!label.trim() || !name.trim()) return;
-    addPhase({ label: label.trim(), name: name.trim(), months: months.trim(), color, accent, tasks: [] });
+    addPhase({ label: label.trim(), name: name.trim(), months: months.trim(), color, accent, tasks: [], startDate: startDate || undefined, estimatedEndDate: estimatedEndDate || undefined });
     onClose();
   }
 
@@ -136,6 +150,16 @@ function AddPhaseModal({ onClose }: { onClose: () => void }) {
         <div>
           <label style={{ fontSize: "0.62rem", color: C.textDim, fontFamily: FONT.mono, display: "block", marginBottom: "0.2rem" }}>Période</label>
           <input value={months} onChange={(e) => setMonths(e.target.value)} placeholder="Mois 37–48" style={inp} />
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+          <div>
+            <label style={{ fontSize: "0.62rem", color: C.textDim, fontFamily: FONT.mono, display: "block", marginBottom: "0.2rem" }}>Date de début</label>
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={inp} />
+          </div>
+          <div>
+            <label style={{ fontSize: "0.62rem", color: C.textDim, fontFamily: FONT.mono, display: "block", marginBottom: "0.2rem" }}>Fin estimée</label>
+            <input type="date" value={estimatedEndDate} onChange={(e) => setEstimatedEndDate(e.target.value)} style={inp} />
+          </div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
           <div>
@@ -204,6 +228,20 @@ export default function PhasesView() {
                     {phase.label} · {phase.months}
                   </div>
                   <div style={{ fontFamily: FONT.display, fontSize: "1rem", color: C.text }}>{phase.name}</div>
+                  {(phase.startDate || phase.estimatedEndDate) && (
+                    <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.3rem" }}>
+                      {phase.startDate && (
+                        <span style={{ fontFamily: FONT.mono, fontSize: "0.58rem", color: C.textDim }}>
+                          ► {new Date(phase.startDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
+                        </span>
+                      )}
+                      {phase.estimatedEndDate && (
+                        <span style={{ fontFamily: FONT.mono, fontSize: "0.58rem", color: C.textDim }}>
+                          → {new Date(phase.estimatedEndDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
                   <div style={{ textAlign: "right" }}>

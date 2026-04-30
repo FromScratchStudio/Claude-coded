@@ -8,6 +8,8 @@ export const PHASES: Phase[] = [
     months: "Mois 1–4",
     color: "#6B7280",
     accent: "#9CA3AF",
+    startDate: "2025-01-01",
+    estimatedEndDate: "2025-04-30",
     tasks: [
       { id: "p0-1", text: "Ouvrir le Substack (identité + À propos + manifeste)", done: true },
       { id: "p0-2", text: "Bible d'univers du feuilleton (personnages, cosmogonie, arc macro)", done: true },
@@ -24,6 +26,8 @@ export const PHASES: Phase[] = [
     months: "Mois 5–12",
     color: "#B45309",
     accent: "#F59E0B",
+    startDate: "2025-05-01",
+    estimatedEndDate: "2025-12-31",
     tasks: [
       { id: "p1-1", text: "Publication bi-mensuelle stricte — aucune exception", done: false },
       { id: "p1-2", text: "Mini-contenus hebdomadaires (croquis, notes, making-of)", done: false },
@@ -40,6 +44,8 @@ export const PHASES: Phase[] = [
     months: "Mois 13–24",
     color: "#065F46",
     accent: "#10B981",
+    startDate: "2026-01-01",
+    estimatedEndDate: "2026-12-31",
     tasks: [
       { id: "p2-1", text: "Premier crowdfunding (mois 14-16) — objectif 8-15 k€", done: false },
       { id: "p2-2", text: "Première collaboration structurée (mois 18-20)", done: false },
@@ -54,6 +60,8 @@ export const PHASES: Phase[] = [
     months: "Mois 25–36",
     color: "#4C1D95",
     accent: "#8B5CF6",
+    startDate: "2027-01-01",
+    estimatedEndDate: "2027-12-31",
     tasks: [
       { id: "p3-1", text: "Banque d'avance 4-6 épisodes confortable", done: false },
       { id: "p3-2", text: "Deuxième crowdfunding (mois 28-30)", done: false },
