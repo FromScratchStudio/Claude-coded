@@ -434,6 +434,7 @@ export default function WeeklyCalendarView() {
   const updateScheduleSlot = useStore((s) => s.updateScheduleSlot);
   const removeScheduleSlot = useStore((s) => s.removeScheduleSlot);
   const clearWeekSlots = useStore((s) => s.clearWeekSlots);
+  const setActiveView = useStore((s) => s.setActiveView);
   const degradedMode = useStore((s) => s.degradedMode);
   const degradedModes = useStore((s) => s.degradedModes);
   const defaultSlotDurationMin = useStore((s) => s.defaultSlotDurationMin);
@@ -789,6 +790,13 @@ export default function WeeklyCalendarView() {
           >›</button>
           {weekSlots.length > 0 && (
             <>
+              <button
+                onClick={() => setActiveView("retrospective")}
+                style={{ background: "none", border: `1px solid ${C.violet}44`, color: C.violet, borderRadius: 6, padding: "0.35rem 0.7rem", fontSize: "0.65rem", cursor: "pointer", fontFamily: FONT.mono }}
+                title="Ouvrir la rétrospective de la semaine"
+              >
+                ↩ Rétro
+              </button>
               <button
                 onClick={() => printWeekPlan()}
                 style={{ background: C.surfaceAlt, border: `1px solid ${C.violet}66`, color: C.violet, borderRadius: 6, padding: "0.35rem 0.7rem", fontSize: "0.65rem", cursor: "pointer", fontFamily: FONT.mono }}

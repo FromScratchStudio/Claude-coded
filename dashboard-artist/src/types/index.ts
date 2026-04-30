@@ -12,6 +12,7 @@ export type ViewId =
   | "ideas"
   | "kefta-matesha"
   | "weekly-calendar"
+  | "retrospective"
   | "settings"
   | "user-guide";
 
@@ -249,6 +250,22 @@ export interface KMIssue {
   status: KMIssueStatus;
   articles: KMArticle[];
   note: string;
+}
+
+// ─── Weekly retrospective ────────────────────────────────────────────────────
+
+export interface WeeklyRetro {
+  id: string;
+  weekKey: string;          // "2026-W18"
+  energyScore: number;      // 1–10
+  pleasureScore: number;    // 1–10
+  accomplished: string;
+  blockers: string;
+  learnings: string;
+  nextWeekIntent: string;
+  completionPct: number;    // 0–100, créneaux réalisés vs planifiés
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ─── Weekly calendar / schedule ───────────────────────────────────────────────

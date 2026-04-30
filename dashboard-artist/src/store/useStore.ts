@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import type {
   ViewId, Project, Chapter, Quarter, Idea, KMIssue, KMArticle, KpiDef, Heteronym,
   Phase, WorkflowStage, DegradedMode, Principle, Trap, CollabCheck, BuildBudget,
-  ScheduleSlot,
+  ScheduleSlot, WeeklyRetro,
 } from "../types";
 import { PROJECTS_INIT } from "../data/projects";
 import { CHAPTERS_INIT, WORKFLOW_STAGES } from "../data/workflow";
@@ -75,7 +75,8 @@ interface StoreState {
   scheduleSlots: ScheduleSlot[];
   /** Durée par défaut d'un créneau en minutes (régime normal). Défaut : 90 (1h30). */
   defaultSlotDurationMin: number;
-}
+  // Weekly retrospectives
+  weeklyRetros: WeeklyRetro[];}
 
 // ─── Actions shape ────────────────────────────────────────────────────────────
 
@@ -179,6 +180,10 @@ interface StoreActions {
   removeScheduleSlot: (id: string) => void;
   clearWeekSlots: (weekKey: string) => void;
   setDefaultSlotDurationMin: (min: number) => void;
+
+  // Weekly retrospectives
+  upsertWeeklyRetro: (retro: Omit<WeeklyRetro, "id" | "createdAt" | "updatedAt">) => void;
+  removeWeeklyRetro: (weekKey: string) => void;
 }
 
 // ─── Initial state ────────────────────────────────────────────────────────────
@@ -213,6 +218,7 @@ const initialState: StoreState = {
   strategyEstimatedEndDate: "2027-12-31",
   scheduleSlots: [],
   defaultSlotDurationMin: 90,
+  weeklyRetros: [],
 };
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -535,7 +541,28 @@ export const useStore = create<StoreState & StoreActions>()(
         set((s) => ({ scheduleSlots: s.scheduleSlots.filter((sl) => sl.weekKey !== weekKey) })),
 
       setDefaultSlotDurationMin: (min) => set({ defaultSlotDurationMin: min }),
+      // ── Weekly retrospectives ───────────────────────────────────────────────────
+      upsertWeeklyRetro: (retro) =>
+        set((s) => {
+          const now = new Date().toISOString();
+          const existing = s.weeklyRetros.find((r) => r.weekKey === retro.weekKey);
+          if (existing) {
+            return {
+              weeklyRetros: s.weeklyRetros.map((r) =>
+                r.weekKey === retro.weekKey ? { ...r, ...retro, updatedAt: now } : r
+              ),
+            };
+          }
+          return {
+            weeklyRetros: [
+              ...s.weeklyRetros,
+              { ...retro, id: genId(), createdAt: now, updatedAt: now },
+            ],
+          };
+        }),
 
+      removeWeeklyRetro: (weekKey) =>
+        set((s) => ({ weeklyRetros: s.weeklyRetros.filter((r) => r.weekKey !== weekKey) })),
       // ── Settings ──────────────────────────────────────────────────────────────
       importState: (data) =>
         set((s) => {
@@ -547,10 +574,12 @@ export const useStore = create<StoreState & StoreActions>()(
             "collabChecklist", "buildBudgets",
             "strategyStartDate", "strategyEstimatedEndDate",
             "scheduleSlots", "defaultSlotDurationMin",
+            "weeklyRetros",
           ];
           const VALID_VIEW_IDS: ViewId[] = [
             "dashboard", "pipeline", "projects", "kpis", "trimestre", "phases",
-            "garde-fous", "referentiel", "ideas", "kefta-matesha", "settings", "user-guide",
+            "garde-fous", "referentiel", "ideas", "kefta-matesha",
+            "weekly-calendar", "retrospective", "settings", "user-guide",
           ];
           const safe: Partial<StoreState> = {};
           for (const key of ALLOWED_KEYS) {
@@ -600,6 +629,9 @@ export const useStore = create<StoreState & StoreActions>()(
         traps: state.traps,
         collabChecklist: state.collabChecklist,
         buildBudgets: state.buildBudgets,
+        scheduleSlots: state.scheduleSlots,
+        defaultSlotDurationMin: state.defaultSlotDurationMin,
+        weeklyRetros: state.weeklyRetros,
       }),
     }
   )
