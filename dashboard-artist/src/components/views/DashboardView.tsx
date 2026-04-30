@@ -26,6 +26,10 @@ export default function DashboardView() {
   const ideas = useStore((s) => s.ideas);
   const quarter = useStore((s) => s.quarter);
   const setActiveView = useStore((s) => s.setActiveView);
+  const strategyStartDate = useStore((s) => s.strategyStartDate);
+  const strategyEstimatedEndDate = useStore((s) => s.strategyEstimatedEndDate);
+  const setStrategyStartDate = useStore((s) => s.setStrategyStartDate);
+  const setStrategyEstimatedEndDate = useStore((s) => s.setStrategyEstimatedEndDate);
 
   const allTasks = phases.flatMap((p) => p.tasks);
   const doneTasks = allTasks.filter((t) => t.done).length;
@@ -219,6 +223,55 @@ export default function DashboardView() {
         >
           → Détails dans <span style={{ color: C.pink }}>Garde-fous</span>
         </button>
+      </Card>
+
+      {/* ─── Strategy calendar — full width */}
+      <Card style={{ gridColumn: "1 / 4" }}>
+        <SectionTitle accent={C.gold}>Calendrier stratégique</SectionTitle>
+        <div style={{ display: "grid", gridTemplateColumns: "auto auto 1fr", gap: "0.6rem 1.5rem", alignItems: "center", marginBottom: "1rem" }}>
+          <span style={{ fontFamily: FONT.mono, fontSize: "0.65rem", color: C.textDim }}>Début stratégie</span>
+          <input
+            type="date"
+            value={strategyStartDate}
+            onChange={(e) => setStrategyStartDate(e.target.value)}
+            style={{ background: C.surfaceAlt, border: `1px solid ${C.border}`, color: C.text, borderRadius: 4, padding: "0.2rem 0.5rem", fontSize: "0.72rem", fontFamily: FONT.mono }}
+          />
+          <span style={{ fontFamily: FONT.mono, fontSize: "0.62rem", color: C.textDim }}>
+            {strategyStartDate ? new Date(strategyStartDate + "T00:00:00").toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "—"}
+          </span>
+          <span style={{ fontFamily: FONT.mono, fontSize: "0.65rem", color: C.textDim }}>Fin estimée</span>
+          <input
+            type="date"
+            value={strategyEstimatedEndDate}
+            onChange={(e) => setStrategyEstimatedEndDate(e.target.value)}
+            style={{ background: C.surfaceAlt, border: `1px solid ${C.border}`, color: C.text, borderRadius: 4, padding: "0.2rem 0.5rem", fontSize: "0.72rem", fontFamily: FONT.mono }}
+          />
+          <span style={{ fontFamily: FONT.mono, fontSize: "0.62rem", color: C.textDim }}>
+            {strategyEstimatedEndDate ? new Date(strategyEstimatedEndDate + "T00:00:00").toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "—"}
+          </span>
+        </div>
+        {/* Phase timeline */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+          {phases.map((phase) => {
+            const doneCount = phase.tasks.filter((t) => t.done).length;
+            const total = phase.tasks.length;
+            const pct = total > 0 ? Math.round((doneCount / total) * 100) : 0;
+            return (
+              <div key={phase.id} style={{ display: "grid", gridTemplateColumns: "6rem 1fr auto auto", gap: "0.5rem", alignItems: "center" }}>
+                <span style={{ fontFamily: FONT.mono, fontSize: "0.62rem", color: phase.accent, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{phase.label}</span>
+                <div style={{ height: 6, background: C.border, borderRadius: 3, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${pct}%`, background: phase.accent, borderRadius: 3, transition: "width 0.3s" }} />
+                </div>
+                <span style={{ fontFamily: FONT.mono, fontSize: "0.58rem", color: C.textDim, whiteSpace: "nowrap" }}>
+                  {phase.startDate ? new Date(phase.startDate + "T00:00:00").toLocaleDateString("fr-FR", { month: "short", year: "2-digit" }) : "—"}
+                </span>
+                <span style={{ fontFamily: FONT.mono, fontSize: "0.58rem", color: C.textDim, whiteSpace: "nowrap" }}>
+                  → {phase.estimatedEndDate ? new Date(phase.estimatedEndDate + "T00:00:00").toLocaleDateString("fr-FR", { month: "short", year: "2-digit" }) : "—"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </Card>
 
       {/* ─── Principle quote — full width */}

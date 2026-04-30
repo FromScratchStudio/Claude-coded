@@ -15,6 +15,8 @@ import IdeasView from "./components/views/IdeasView";
 import KeftaMateshaView from "./components/views/KeftaMateshaView";
 import SettingsView from "./components/views/SettingsView";
 import UserGuideView from "./components/views/UserGuideView";
+import WeeklyCalendarView from "./components/views/WeeklyCalendarView";
+import WeeklyRetroView from "./components/views/WeeklyRetroView";
 import type { ViewId } from "./types";
 
 const VIEWS: Record<ViewId, JSX.Element> = {
@@ -28,6 +30,8 @@ const VIEWS: Record<ViewId, JSX.Element> = {
   referentiel: <ReferentielView />,
   ideas: <IdeasView />,
   "kefta-matesha": <KeftaMateshaView />,
+  "weekly-calendar": <WeeklyCalendarView />,
+  retrospective: <WeeklyRetroView />,
   settings: <SettingsView />,
   "user-guide": <UserGuideView />,
 };

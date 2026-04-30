@@ -29,6 +29,8 @@ function ProjectForm({ initial, onSave, onCancel }: ProjectFormProps) {
   const [progress, setProgress] = useState(initial?.progress ?? 0);
   const [priority, setPriority] = useState<ProjectPriority>(initial?.priority ?? "medium");
   const [note, setNote] = useState(initial?.note ?? "");
+  const [startDate, setStartDate] = useState(initial?.startDate ?? "");
+  const [estimatedEndDate, setEstimatedEndDate] = useState(initial?.estimatedEndDate ?? "");
 
   const selectStyle = {
     background: C.surfaceAlt,
@@ -44,7 +46,7 @@ function ProjectForm({ initial, onSave, onCancel }: ProjectFormProps) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
-    onSave({ name: name.trim(), ring, phase, status, progress, priority, note });
+    onSave({ name: name.trim(), ring, phase, status, progress, priority, note, startDate: startDate || undefined, estimatedEndDate: estimatedEndDate || undefined });
   }
 
   return (
@@ -91,6 +93,16 @@ function ProjectForm({ initial, onSave, onCancel }: ProjectFormProps) {
         rows={2}
         style={{ ...selectStyle, resize: "vertical", fontSize: "0.72rem" }}
       />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+        <div>
+          <label style={{ fontSize: "0.62rem", color: C.textDim, fontFamily: FONT.mono, display: "block", marginBottom: "0.2rem" }}>Début</label>
+          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={selectStyle} />
+        </div>
+        <div>
+          <label style={{ fontSize: "0.62rem", color: C.textDim, fontFamily: FONT.mono, display: "block", marginBottom: "0.2rem" }}>Fin estimée</label>
+          <input type="date" value={estimatedEndDate} onChange={(e) => setEstimatedEndDate(e.target.value)} style={selectStyle} />
+        </div>
+      </div>
       <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
         <button type="button" onClick={onCancel} style={{ background: C.surfaceAlt, border: `1px solid ${C.border}`, color: C.textMuted, borderRadius: 6, padding: "0.35rem 0.8rem", cursor: "pointer", fontFamily: FONT.mono, fontSize: "0.7rem" }}>
           Annuler
@@ -249,6 +261,22 @@ export default function ProjectsView() {
                     <p style={{ fontSize: "0.68rem", color: C.textSoft, margin: 0, fontStyle: "italic", borderLeft: `2px solid ${ringColor(project.ring)}44`, paddingLeft: "0.4rem" }}>
                       {project.note}
                     </p>
+                  )}
+
+                  {/* Dates */}
+                  {(project.startDate || project.estimatedEndDate) && (
+                    <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.45rem", flexWrap: "wrap" }}>
+                      {project.startDate && (
+                        <span style={{ fontFamily: FONT.mono, fontSize: "0.6rem", color: C.textDim }}>
+                          ▶ {new Date(project.startDate + "T00:00:00").toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
+                        </span>
+                      )}
+                      {project.estimatedEndDate && (
+                        <span style={{ fontFamily: FONT.mono, fontSize: "0.6rem", color: C.textDim }}>
+                          → {new Date(project.estimatedEndDate + "T00:00:00").toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </>
               )}

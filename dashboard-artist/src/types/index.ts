@@ -11,6 +11,8 @@ export type ViewId =
   | "referentiel"
   | "ideas"
   | "kefta-matesha"
+  | "weekly-calendar"
+  | "retrospective"
   | "settings"
   | "user-guide";
 
@@ -30,6 +32,8 @@ export interface Phase {
   color: string;
   accent: string;
   tasks: Task[];
+  startDate?: string;       // ISO date string, e.g. "2025-01-01"
+  estimatedEndDate?: string; // ISO date string
 }
 
 // ─── Allocation rings ─────────────────────────────────────────────────────────
@@ -58,6 +62,8 @@ export interface Project {
   progress: number; // 0–100
   note: string;
   priority: ProjectPriority;
+  startDate?: string;       // ISO date string
+  estimatedEndDate?: string; // ISO date string
 }
 
 // ─── KPIs ─────────────────────────────────────────────────────────────────────
@@ -90,6 +96,8 @@ export interface Chapter {
   gates: boolean[];
   lastUpdate: string;
   hook: string;
+  startDate?: string;       // ISO date string
+  estimatedEndDate?: string; // ISO date string (target publication)
 }
 
 export interface WorkMode {
@@ -143,6 +151,8 @@ export interface DegradedMode {
   trigger: string;
   rules: string[];
   exit: string;
+  /** Durée d'un créneau (UT) dans ce régime, en minutes. Undefined = utiliser defaultSlotDurationMin. */
+  slotDurationMin?: number;
 }
 
 export interface Principle {
@@ -239,5 +249,38 @@ export interface KMIssue {
   publishedDate: string;
   status: KMIssueStatus;
   articles: KMArticle[];
+  note: string;
+}
+
+// ─── Weekly retrospective ────────────────────────────────────────────────────
+
+export interface WeeklyRetro {
+  id: string;
+  weekKey: string;          // "2026-W18"
+  energyScore: number;      // 1–10
+  pleasureScore: number;    // 1–10
+  accomplished: string;
+  blockers: string;
+  learnings: string;
+  nextWeekIntent: string;
+  completionPct: number;    // 0–100, créneaux réalisés vs planifiés
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Weekly calendar / schedule ───────────────────────────────────────────────
+
+/** 0 = Monday … 6 = Sunday */
+export type DayIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+export interface ScheduleSlot {
+  id: string;
+  weekKey: string;        // ISO week key e.g. "2026-W18"
+  day: DayIndex;          // 0 = Monday … 6 = Sunday
+  hour: number;           // start hour (integer, e.g. 10 = 10:00)
+  durationMin: number;    // actual duration in minutes (= utCount * UT at creation)
+  utCount: number;        // number of UTs booked
+  workModeId: string | null;  // links to WorkMode.id
+  projectId: string | null;   // links to Project.id
   note: string;
 }

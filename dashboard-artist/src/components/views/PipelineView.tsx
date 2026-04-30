@@ -163,6 +163,8 @@ function ChapterCard({ chapter, stages }: { chapter: Chapter; stages: WorkflowSt
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(chapter.title);
   const [hook, setHook] = useState(chapter.hook);
+  const [startDate, setStartDate] = useState(chapter.startDate ?? "");
+  const [estimatedEndDate, setEstimatedEndDate] = useState(chapter.estimatedEndDate ?? "");
 
   const maxStageId = stages.length > 0 ? Math.max(...stages.map((s) => s.id)) : 0;
   const stageObj = stages.find((s) => s.id === chapter.stage);
@@ -174,7 +176,7 @@ function ChapterCard({ chapter, stages }: { chapter: Chapter; stages: WorkflowSt
   const canAdvance = gatesDone === gatesTotal && !isPublished;
   const nextStage = stages.find((s) => s.id > chapter.stage);
 
-  function save() { updateChapter(chapter.id, { title, hook }); setEditing(false); }
+  function save() { updateChapter(chapter.id, { title, hook, startDate: startDate || undefined, estimatedEndDate: estimatedEndDate || undefined }); setEditing(false); }
 
   return (
     <div style={{ background: C.bg, border: `1px solid ${isPublished ? `${C.green}44` : C.border}`, borderRadius: 8, padding: "0.9rem", opacity: isPublished ? 0.7 : 1, marginBottom: "0.75rem" }}>
@@ -196,6 +198,20 @@ function ChapterCard({ chapter, stages }: { chapter: Chapter; stages: WorkflowSt
           {isPublished ? "✓ Publié" : `Étape ${chapter.stage} — ${stageObj?.label ?? ""}`}
           {!isPublished && <span style={{ color: C.textDim }}> · {gatesDone}/{gatesTotal} portes</span>}
         </div>
+        {(chapter.startDate || chapter.estimatedEndDate) && !editing && (
+          <div style={{ display: "flex", gap: "0.6rem", marginTop: "0.25rem" }}>
+            {chapter.startDate && (
+              <span style={{ fontFamily: FONT.mono, fontSize: "0.58rem", color: C.textDim }}>
+                ► {new Date(chapter.startDate + "T00:00:00").toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
+              </span>
+            )}
+            {chapter.estimatedEndDate && (
+              <span style={{ fontFamily: FONT.mono, fontSize: "0.58rem", color: C.textDim }}>
+                → {new Date(chapter.estimatedEndDate + "T00:00:00").toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {!isPublished && stageObj && (
@@ -216,6 +232,19 @@ function ChapterCard({ chapter, stages }: { chapter: Chapter; stages: WorkflowSt
         <input value={hook} onChange={(e) => setHook(e.target.value)} placeholder="Hook transmédia (optionnel)…" style={{ background: C.surfaceAlt, border: `1px solid ${C.border}`, color: C.text, borderRadius: 4, padding: "0.2rem 0.4rem", fontSize: "0.65rem", width: "100%", marginBottom: "0.5rem" }} />
       ) : (
         chapter.hook && <div style={{ fontSize: "0.63rem", color: C.orange, fontStyle: "italic", marginBottom: "0.55rem", borderLeft: `2px solid ${C.orange}44`, paddingLeft: "0.4rem" }}>→ {chapter.hook}</div>
+      )}
+
+      {editing && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.4rem", marginBottom: "0.5rem" }}>
+          <div>
+            <label style={{ fontSize: "0.58rem", color: C.textDim, fontFamily: FONT.mono, display: "block", marginBottom: "0.15rem" }}>Début</label>
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ background: C.surfaceAlt, border: `1px solid ${C.border}`, color: C.text, borderRadius: 4, padding: "0.2rem 0.4rem", fontSize: "0.62rem", width: "100%" }} />
+          </div>
+          <div>
+            <label style={{ fontSize: "0.58rem", color: C.textDim, fontFamily: FONT.mono, display: "block", marginBottom: "0.15rem" }}>Publication estimée</label>
+            <input type="date" value={estimatedEndDate} onChange={(e) => setEstimatedEndDate(e.target.value)} style={{ background: C.surfaceAlt, border: `1px solid ${C.border}`, color: C.text, borderRadius: 4, padding: "0.2rem 0.4rem", fontSize: "0.62rem", width: "100%" }} />
+          </div>
+        </div>
       )}
 
       <div style={{ display: "flex", gap: "0.4rem" }}>
