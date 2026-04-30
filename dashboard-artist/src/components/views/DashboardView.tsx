@@ -237,7 +237,7 @@ export default function DashboardView() {
             style={{ background: C.surfaceAlt, border: `1px solid ${C.border}`, color: C.text, borderRadius: 4, padding: "0.2rem 0.5rem", fontSize: "0.72rem", fontFamily: FONT.mono }}
           />
           <span style={{ fontFamily: FONT.mono, fontSize: "0.62rem", color: C.textDim }}>
-            {strategyStartDate ? new Date(strategyStartDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "—"}
+            {strategyStartDate ? new Date(strategyStartDate + "T00:00:00").toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "—"}
           </span>
           <span style={{ fontFamily: FONT.mono, fontSize: "0.65rem", color: C.textDim }}>Fin estimée</span>
           <input
@@ -247,7 +247,7 @@ export default function DashboardView() {
             style={{ background: C.surfaceAlt, border: `1px solid ${C.border}`, color: C.text, borderRadius: 4, padding: "0.2rem 0.5rem", fontSize: "0.72rem", fontFamily: FONT.mono }}
           />
           <span style={{ fontFamily: FONT.mono, fontSize: "0.62rem", color: C.textDim }}>
-            {strategyEstimatedEndDate ? new Date(strategyEstimatedEndDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "—"}
+            {strategyEstimatedEndDate ? new Date(strategyEstimatedEndDate + "T00:00:00").toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "—"}
           </span>
         </div>
         {/* Phase timeline */}
@@ -263,10 +263,10 @@ export default function DashboardView() {
                   <div style={{ height: "100%", width: `${pct}%`, background: phase.accent, borderRadius: 3, transition: "width 0.3s" }} />
                 </div>
                 <span style={{ fontFamily: FONT.mono, fontSize: "0.58rem", color: C.textDim, whiteSpace: "nowrap" }}>
-                  {phase.startDate ? new Date(phase.startDate).toLocaleDateString("fr-FR", { month: "short", year: "2-digit" }) : "—"}
+                  {phase.startDate ? new Date(phase.startDate + "T00:00:00").toLocaleDateString("fr-FR", { month: "short", year: "2-digit" }) : "—"}
                 </span>
                 <span style={{ fontFamily: FONT.mono, fontSize: "0.58rem", color: C.textDim, whiteSpace: "nowrap" }}>
-                  → {phase.estimatedEndDate ? new Date(phase.estimatedEndDate).toLocaleDateString("fr-FR", { month: "short", year: "2-digit" }) : "—"}
+                  → {phase.estimatedEndDate ? new Date(phase.estimatedEndDate + "T00:00:00").toLocaleDateString("fr-FR", { month: "short", year: "2-digit" }) : "—"}
                 </span>
               </div>
             );

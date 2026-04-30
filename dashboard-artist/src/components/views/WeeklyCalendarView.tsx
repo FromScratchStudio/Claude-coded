@@ -71,6 +71,15 @@ function fmtTime(totalMin: number): string {
   return `${h}h${String(m).padStart(2, "0")}`;
 }
 
+function escHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // ─── Slot editor modal ────────────────────────────────────────────────────────
 
 interface SlotEditorProps {
@@ -348,15 +357,16 @@ function SlotEditor({ day, hour, slotDurationMin, existingSlot, onSave, onClear,
 
 interface CopyWeekModalProps {
   sourceWeekKey: string;
+  sourceMonday: Date;
   sourceSlots: ScheduleSlot[];
   onCopy: (targetWeekKey: string) => void;
   onClose: () => void;
 }
 
-function CopyWeekModal({ sourceWeekKey, sourceSlots, onCopy, onClose }: CopyWeekModalProps) {
+function CopyWeekModal({ sourceWeekKey, sourceMonday, sourceSlots, onCopy, onClose }: CopyWeekModalProps) {
   const [targetOffset, setTargetOffset] = useState(1);
 
-  const targetMonday = getMondayOfWeek(targetOffset);
+  const targetMonday = addDays(sourceMonday, targetOffset * 7);
   const targetWeekKey = getISOWeekKey(targetMonday);
 
   return (
@@ -440,8 +450,8 @@ export default function WeeklyCalendarView() {
   const defaultSlotDurationMin = useStore((s) => s.defaultSlotDurationMin);
 
   const activeGardeFou = degradedMode ? degradedModes.find((m) => m.id === degradedMode) : undefined;
-  /** Règle : régime normal → 1 UT = defaultSlotDurationMin (90min) ; tout autre régime → 1 UT = 45min */
-  const effectiveSlotDurationMin = activeGardeFou ? 45 : defaultSlotDurationMin;
+  /** Règle : régime normal → 1 UT = defaultSlotDurationMin ; régime dégradé → slotDurationMin si défini, sinon defaultSlotDurationMin */
+  const effectiveSlotDurationMin = activeGardeFou?.slotDurationMin ?? defaultSlotDurationMin;
 
   const [weekOffset, setWeekOffset] = useState(0);
   const [editing, setEditing] = useState<{ day: DayIndex; hour: number } | null>(null);
@@ -466,7 +476,10 @@ export default function WeeklyCalendarView() {
   );
 
   // Stats
-  const totalSlots = weekSlots.length;
+  const totalUTs = useMemo(
+    () => weekSlots.reduce((sum, s) => sum + (s.utCount ?? 1), 0),
+    [weekSlots]
+  );
   const totalMinutes = useMemo(
     () => weekSlots.reduce((sum, s) => sum + (s.durationMin ?? defaultSlotDurationMin), 0),
     [weekSlots, defaultSlotDurationMin]
@@ -527,9 +540,9 @@ export default function WeeklyCalendarView() {
       return `
         <div style="border-radius:3px;padding:4px 6px;border-left:3px solid ${color};background:${color}18;margin-bottom:3px;">
           <div style="font-size:7.5pt;font-weight:bold;color:#111;">${fmtHour(slot.hour)}\u2013${endLbl}</div>
-          <div style="font-size:7pt;color:#333;margin-top:1px;">${mode?.name ?? "Créneau libre"} <span style="color:#888;font-size:6.5pt;">(${utLabel})</span></div>
-          ${project ? `<div style="font-size:6.5pt;color:#555;margin-top:1px;">&#128204; ${project.name}</div>` : ""}
-          ${slot.note ? `<div style="font-size:6pt;color:#777;font-style:italic;margin-top:2px;">${slot.note}</div>` : ""}
+          <div style="font-size:7pt;color:#333;margin-top:1px;">${mode ? escHtml(mode.name) : "Créneau libre"} <span style="color:#888;font-size:6.5pt;">(${utLabel})</span></div>
+          ${project ? `<div style="font-size:6.5pt;color:#555;margin-top:1px;">&#128204; ${escHtml(project.name)}</div>` : ""}
+          ${slot.note ? `<div style="font-size:6pt;color:#777;font-style:italic;margin-top:2px;">${escHtml(slot.note)}</div>` : ""}
         </div>`;
     }
 
@@ -694,17 +707,22 @@ export default function WeeklyCalendarView() {
   }
 
   function handleCopy(targetWeekKey: string) {
+    const targetKeys = new Set(
+      scheduleSlots.filter((s) => s.weekKey === targetWeekKey).map((s) => `${s.day}-${s.hour}`)
+    );
     weekSlots.forEach((s) => {
-      addScheduleSlot({
-        weekKey: targetWeekKey,
-        day: s.day,
-        hour: s.hour,
-        workModeId: s.workModeId,
-        projectId: s.projectId,
-        note: s.note,
-        durationMin: s.durationMin ?? defaultSlotDurationMin,
-        utCount: s.utCount ?? 1,
-      });
+      if (!targetKeys.has(`${s.day}-${s.hour}`)) {
+        addScheduleSlot({
+          weekKey: targetWeekKey,
+          day: s.day,
+          hour: s.hour,
+          workModeId: s.workModeId,
+          projectId: s.projectId,
+          note: s.note,
+          durationMin: s.durationMin ?? defaultSlotDurationMin,
+          utCount: s.utCount ?? 1,
+        });
+      }
     });
   }
 
@@ -733,9 +751,9 @@ export default function WeeklyCalendarView() {
           </h2>
           <p style={{ fontSize: "0.7rem", color: C.textDim, margin: "0.2rem 0 0", fontFamily: FONT.mono }}>
             {weekKey}
-            {totalSlots > 0 && (
-              <> · <span style={{ color: C.text }}>{totalSlots} UT</span>{" "}
-                <span style={{ color: C.textVeryDim }}>(à {fmtDuration(effectiveSlotDurationMin)}/créneau = {fmtTime(totalMinutes)})</span>
+            {totalUTs > 0 && (
+              <> · <span style={{ color: C.text }}>{totalUTs} UT</span>{" "}
+                <span style={{ color: C.textVeryDim }}>({weekSlots.length} créneau{weekSlots.length > 1 ? "x" : ""} · à {fmtDuration(effectiveSlotDurationMin)}/créneau = {fmtTime(totalMinutes)})</span>
               </>
             )}
             {weekOffset !== 0 && (
@@ -1096,7 +1114,7 @@ export default function WeeklyCalendarView() {
         {/* Hours by mode */}
         <Card>
           <SectionTitle accent={C.gold}>Répartition par mode</SectionTitle>
-          {totalSlots === 0 ? (
+          {weekSlots.length === 0 ? (
             <p style={{ fontSize: "0.72rem", color: C.textDim, fontStyle: "italic", margin: 0 }}>
               Aucun créneau planifié cette semaine.
             </p>
@@ -1136,7 +1154,7 @@ export default function WeeklyCalendarView() {
         {/* Day distribution */}
         <Card>
           <SectionTitle accent={C.cyan}>Charge par jour</SectionTitle>
-          {totalSlots === 0 ? (
+          {weekSlots.length === 0 ? (
             <p style={{ fontSize: "0.72rem", color: C.textDim, fontStyle: "italic", margin: 0 }}>
               Aucun créneau planifié cette semaine.
             </p>
@@ -1188,7 +1206,7 @@ export default function WeeklyCalendarView() {
               })}
             </div>
           )}
-          {totalSlots > 0 && (
+          {weekSlots.length > 0 && (
             <div
               style={{
                 marginTop: "0.75rem",
@@ -1200,7 +1218,7 @@ export default function WeeklyCalendarView() {
               }}
             >
               <span style={{ fontFamily: FONT.mono, fontSize: "0.62rem", color: C.textDim }}>
-                {totalSlots} UT · {fmtDuration(effectiveSlotDurationMin)}/créneau
+                {totalUTs} UT · {fmtDuration(effectiveSlotDurationMin)}/créneau
               </span>
               <span style={{ fontFamily: FONT.mono, fontSize: "0.72rem", color: C.gold, fontWeight: "bold" }}>
                 {fmtTime(totalMinutes)}
@@ -1269,6 +1287,7 @@ export default function WeeklyCalendarView() {
       {showCopy && (
         <CopyWeekModal
           sourceWeekKey={weekKey}
+          sourceMonday={monday}
           sourceSlots={weekSlots}
           onCopy={handleCopy}
           onClose={() => setShowCopy(false)}

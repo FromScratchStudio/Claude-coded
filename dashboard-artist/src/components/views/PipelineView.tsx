@@ -202,12 +202,12 @@ function ChapterCard({ chapter, stages }: { chapter: Chapter; stages: WorkflowSt
           <div style={{ display: "flex", gap: "0.6rem", marginTop: "0.25rem" }}>
             {chapter.startDate && (
               <span style={{ fontFamily: FONT.mono, fontSize: "0.58rem", color: C.textDim }}>
-                ► {new Date(chapter.startDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
+                ► {new Date(chapter.startDate + "T00:00:00").toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
               </span>
             )}
             {chapter.estimatedEndDate && (
               <span style={{ fontFamily: FONT.mono, fontSize: "0.58rem", color: C.textDim }}>
-                → {new Date(chapter.estimatedEndDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
+                → {new Date(chapter.estimatedEndDate + "T00:00:00").toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
               </span>
             )}
           </div>

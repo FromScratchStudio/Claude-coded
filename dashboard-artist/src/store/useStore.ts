@@ -629,6 +629,8 @@ export const useStore = create<StoreState & StoreActions>()(
         traps: state.traps,
         collabChecklist: state.collabChecklist,
         buildBudgets: state.buildBudgets,
+        strategyStartDate: state.strategyStartDate,
+        strategyEstimatedEndDate: state.strategyEstimatedEndDate,
         scheduleSlots: state.scheduleSlots,
         defaultSlotDurationMin: state.defaultSlotDurationMin,
         weeklyRetros: state.weeklyRetros,

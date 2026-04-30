@@ -232,12 +232,12 @@ export default function PhasesView() {
                     <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.3rem" }}>
                       {phase.startDate && (
                         <span style={{ fontFamily: FONT.mono, fontSize: "0.58rem", color: C.textDim }}>
-                          ► {new Date(phase.startDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
+                          ► {new Date(phase.startDate + "T00:00:00").toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
                         </span>
                       )}
                       {phase.estimatedEndDate && (
                         <span style={{ fontFamily: FONT.mono, fontSize: "0.58rem", color: C.textDim }}>
-                          → {new Date(phase.estimatedEndDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
+                          → {new Date(phase.estimatedEndDate + "T00:00:00").toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
                         </span>
                       )}
                     </div>

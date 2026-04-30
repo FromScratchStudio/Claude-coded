@@ -268,12 +268,12 @@ export default function ProjectsView() {
                     <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.45rem", flexWrap: "wrap" }}>
                       {project.startDate && (
                         <span style={{ fontFamily: FONT.mono, fontSize: "0.6rem", color: C.textDim }}>
-                          ▶ {new Date(project.startDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
+                          ▶ {new Date(project.startDate + "T00:00:00").toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
                         </span>
                       )}
                       {project.estimatedEndDate && (
                         <span style={{ fontFamily: FONT.mono, fontSize: "0.6rem", color: C.textDim }}>
-                          → {new Date(project.estimatedEndDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
+                          → {new Date(project.estimatedEndDate + "T00:00:00").toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
                         </span>
                       )}
                     </div>
