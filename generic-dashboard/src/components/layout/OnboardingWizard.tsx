@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { useStore } from "../../store/useStore";
 import { C, FONT, applyAccentColor } from "../../theme";
 
@@ -361,7 +361,7 @@ export default function OnboardingWizard() {
 
 // ─── Local styles ─────────────────────────────────────────────────────────────
 
-const inp: React.CSSProperties = {
+const inp: CSSProperties = {
   width: "100%",
   background: C.bgDeep,
   border: `1px solid ${C.border}`,
@@ -373,14 +373,14 @@ const inp: React.CSSProperties = {
   boxSizing: "border-box",
 };
 
-const lbl: React.CSSProperties = {
+const lbl: CSSProperties = {
   fontSize: "0.75rem",
   color: C.textMuted,
   display: "block",
   marginBottom: 4,
 };
 
-const nextBtn: React.CSSProperties = {
+const nextBtn: CSSProperties = {
   background: "var(--accent)",
   border: "none",
   color: "#fff",
@@ -391,7 +391,7 @@ const nextBtn: React.CSSProperties = {
   fontWeight: 600,
 };
 
-const backBtn: React.CSSProperties = {
+const backBtn: CSSProperties = {
   background: C.surfaceAlt,
   border: `1px solid ${C.border}`,
   color: C.textSoft,
@@ -401,7 +401,7 @@ const backBtn: React.CSSProperties = {
   fontSize: "0.9rem",
 };
 
-const navRow: React.CSSProperties = {
+const navRow: CSSProperties = {
   display: "flex",
   justifyContent: "space-between",
   marginTop: "1.5rem",

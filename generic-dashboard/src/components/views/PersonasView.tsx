@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useStore } from "../../store/useStore";
 import { C } from "../../theme";
 import { SectionTitle } from "../ui/SectionTitle";
@@ -109,7 +109,7 @@ export default function PersonasView() {
     setShowModal(false);
   }
 
-  const section = (title: string, content: React.ReactNode) => (
+  const section = (title: string, content: ReactNode) => (
     <div style={{ marginBottom: "1.25rem" }}>
       <div
         style={{

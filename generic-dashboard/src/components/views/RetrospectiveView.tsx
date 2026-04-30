@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useStore } from "../../store/useStore";
 import { C } from "../../theme";
 import { SectionTitle } from "../ui/SectionTitle";
@@ -51,6 +51,16 @@ function fmtDuration(min: number): string {
   const h = Math.floor(min / 60);
   const m = min % 60;
   return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, "0")}`;
+}
+
+/** Returns the Monday (UTC midnight) for the given ISO year+week. */
+function getMondayOfISOWeek(year: number, week: number): Date {
+  // Jan 4 of any year is always in ISO week 1
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const dayOfWeek = jan4.getUTCDay() || 7; // Mon=1 … Sun=7
+  const monday = new Date(jan4);
+  monday.setUTCDate(jan4.getUTCDate() - dayOfWeek + 1 + (week - 1) * 7);
+  return monday;
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -134,8 +144,10 @@ export default function RetrospectiveView() {
   const [nextIntent, setNextIntent] = useState(existing?.nextWeekIntent ?? "");
   const [saved, setSaved] = useState(false);
 
-  const [lastLoadedWeek, setLastLoadedWeek] = useState(weekKey);
-  if (weekKey !== lastLoadedWeek) {
+  // Reset form fields only when the displayed week changes.
+  // weeklyRetros is intentionally excluded from deps: including it would reset
+  // the form every time the user saves, discarding edits in progress.
+  useEffect(() => {
     const ex = weeklyRetros.find((r) => r.weekKey === weekKey);
     setEnergy(ex?.energyScore ?? 7);
     setSatisfaction(ex?.satisfactionScore ?? 7);
@@ -145,8 +157,8 @@ export default function RetrospectiveView() {
     setLearnings(ex?.learnings ?? "");
     setNextIntent(ex?.nextWeekIntent ?? "");
     setSaved(false);
-    setLastLoadedWeek(weekKey);
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- see comment above
+  }, [weekKey]);
 
   // Scheduled slots for this week
   const weekSlots = useMemo(
@@ -321,8 +333,10 @@ export default function RetrospectiveView() {
                   <button
                     key={retro.id}
                     onClick={() => {
-                      // Find offset for this weekKey
-                      const retroMonday = new Date(retro.weekKey + "-1"); // approximate
+                      // Parse YYYY-Wnn reliably instead of relying on Date string parsing
+                      const match = retro.weekKey.match(/^(\d{4})-W(\d{2})$/);
+                      if (!match) return;
+                      const retroMonday = getMondayOfISOWeek(Number(match[1]), Number(match[2]));
                       const todayMonday = getMondayOfWeek(0);
                       const diff = Math.round((retroMonday.getTime() - todayMonday.getTime()) / (7 * 86400000));
                       setRetroWeekOffset(diff);

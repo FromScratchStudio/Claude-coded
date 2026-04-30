@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { useStore } from "../../store/useStore";
 import { C } from "../../theme";
 import { SectionTitle } from "../ui/SectionTitle";
@@ -159,8 +159,8 @@ export default function WeeklyCalendarView() {
           </div>
         ))}
         {HOURS.map((hour) => (
-          <>
-            <div key={`hour-${hour}`} style={{ padding: "0.25rem 0.5rem", fontSize: "0.68rem", color: C.textVeryDim, textAlign: "right", borderBottom: `1px solid ${C.border}`, height: SLOT_HEIGHT, boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "flex-end", background: C.surfaceAlt }}>
+          <Fragment key={`row-${hour}`}>
+            <div style={{ padding: "0.25rem 0.5rem", fontSize: "0.68rem", color: C.textVeryDim, textAlign: "right", borderBottom: `1px solid ${C.border}`, height: SLOT_HEIGHT, boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "flex-end", background: C.surfaceAlt }}>
               {hour}:00
             </div>
             {DAYS.map((_, dayIdx) => {
@@ -191,7 +191,7 @@ export default function WeeklyCalendarView() {
                 </div>
               );
             })}
-          </>
+          </Fragment>
         ))}
       </div>
 

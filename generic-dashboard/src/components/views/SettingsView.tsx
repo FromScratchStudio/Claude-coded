@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import { useStore } from "../../store/useStore";
 import { C, applyAccentColor } from "../../theme";
 import { SectionTitle } from "../ui/SectionTitle";
@@ -45,6 +45,7 @@ export default function SettingsView() {
   }
 
   function handleAccentChange(hex: string) {
+    if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
     updateAppConfig({ accentColor: hex });
     applyAccentColor(hex);
     flashSave();
@@ -124,7 +125,7 @@ export default function SettingsView() {
     URL.revokeObjectURL(url);
   }
 
-  function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleImport(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();

@@ -1,3 +1,4 @@
+import { type ReactNode } from "react";
 import { useStore } from "../../store/useStore";
 import { C } from "../../theme";
 import { SectionTitle } from "../ui/SectionTitle";
@@ -6,7 +7,7 @@ import { Card } from "../ui/Card";
 export default function UserGuideView() {
   const appConfig = useStore((s) => s.appConfig);
 
-  const section = (title: string, content: React.ReactNode) => (
+  const section = (title: string, content: ReactNode) => (
     <Card style={{ marginBottom: "1.25rem" }}>
       <h3
         style={{

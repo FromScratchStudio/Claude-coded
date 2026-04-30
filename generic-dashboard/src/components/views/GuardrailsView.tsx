@@ -182,8 +182,8 @@ export default function GuardrailsView() {
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "0.75rem" }}>
             <button
               onClick={() => {
-                const n = `P${principles.length + 1}`;
-                addPrinciple({ n, text: "New principle" });
+                const maxN = principles.reduce((m, p) => Math.max(m, Number(p.n) || 0), 0);
+                addPrinciple({ n: String(maxN + 1), text: "New principle" });
               }}
               style={{ ...btnPrimary, fontSize: "0.8rem" }}
             >
@@ -247,8 +247,8 @@ export default function GuardrailsView() {
               <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "0.55rem 1rem" }}>
                 <span style={{ fontSize: "0.85rem", color: C.accent, minWidth: 20 }}>☐</span>
                 <input
-                  value={item.q}
-                  onChange={(e) => updateCollabCheck(item.id, { q: e.target.value })}
+                  value={item.text}
+                  onChange={(e) => updateCollabCheck(item.id, { text: e.target.value })}
                   style={{ flex: 1, background: "transparent", border: "none", color: C.textSoft, fontSize: "0.85rem", outline: "none" }}
                 />
                 <button onClick={() => removeCollabCheck(item.id)} style={{ background: "none", border: "none", color: C.textVeryDim, cursor: "pointer" }}>×</button>
@@ -261,7 +261,8 @@ export default function GuardrailsView() {
               onChange={(e) => setNewCheckQ(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && newCheckQ.trim()) {
-                  addCollabCheck({ id: genId(), q: newCheckQ.trim(), text: "" });
+                  const maxQ = collabChecklist.reduce((m, c) => Math.max(m, Number(c.q) || 0), 0);
+                  addCollabCheck({ id: genId(), q: String(maxQ + 1), text: newCheckQ.trim() });
                   setNewCheckQ("");
                 }
               }}
@@ -271,7 +272,8 @@ export default function GuardrailsView() {
             <button
               onClick={() => {
                 if (newCheckQ.trim()) {
-                  addCollabCheck({ id: genId(), q: newCheckQ.trim(), text: "" });
+                  const maxQ = collabChecklist.reduce((m, c) => Math.max(m, Number(c.q) || 0), 0);
+                  addCollabCheck({ id: genId(), q: String(maxQ + 1), text: newCheckQ.trim() });
                   setNewCheckQ("");
                 }
               }}
