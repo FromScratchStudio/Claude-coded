@@ -1,5 +1,6 @@
 import { useStore } from "../../store/useStore";
 import { C, FONT, styleCard } from "../../theme";
+import { useBreakpoint } from "../../hooks/useBreakpoint";
 import { SectionTitle } from "../ui/SectionTitle";
 import { RingDonut } from "../ui/RingDonut";
 import { ProgressBar } from "../ui/ProgressBar";
@@ -59,6 +60,8 @@ export default function DashboardView() {
   // Active projects
   const activeProjects = projects.filter((p) => p.status === "active").slice(0, 4);
 
+  const { isMobile, isTablet } = useBreakpoint();
+
   return (
     <div>
       {/* Header */}
@@ -75,7 +78,7 @@ export default function DashboardView() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
+          gridTemplateColumns: isMobile ? "1fr" : isTablet ? "1fr 1fr" : "1fr 1fr 1fr",
           gap: "1rem",
           marginBottom: "1rem",
         }}
@@ -230,7 +233,7 @@ export default function DashboardView() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
+          gridTemplateColumns: isMobile ? "1fr" : isTablet ? "1fr 1fr" : "1fr 1fr 1fr",
           gap: "1rem",
           marginBottom: "1rem",
         }}
@@ -440,7 +443,7 @@ export default function DashboardView() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "2fr 2fr 1fr",
+          gridTemplateColumns: isMobile ? "1fr" : isTablet ? "1fr 1fr" : "2fr 2fr 1fr",
           gap: "1rem",
           marginBottom: "1rem",
         }}

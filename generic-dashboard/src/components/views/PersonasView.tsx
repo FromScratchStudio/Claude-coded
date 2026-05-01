@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { useStore } from "../../store/useStore";
 import { C } from "../../theme";
+import { useBreakpoint } from "../../hooks/useBreakpoint";
 import { SectionTitle } from "../ui/SectionTitle";
 import { Modal, inputStyle, labelStyle, formRow, btnPrimary, btnSecondary, btnDanger } from "../ui/Modal";
 import type { Persona } from "../../types";
@@ -21,6 +22,8 @@ export default function PersonasView() {
   const [selectedId, setSelectedId] = useState<string | null>(personas[0]?.id ?? null);
   const [showModal, setShowModal] = useState(false);
   const [editPersona, setEditPersona] = useState<Persona | null>(null);
+
+  const { isMobile } = useBreakpoint();
 
   // Form state
   const [pCode, setPCode] = useState("");
@@ -128,9 +131,10 @@ export default function PersonasView() {
   );
 
   return (
-    <div style={{ display: "flex", gap: "1.5rem", minHeight: 600 }}>
+    <div style={{ display: "flex", gap: "1.5rem", minHeight: 600, flexDirection: isMobile ? "column" : "row" }}>
       {/* Sidebar */}
-      <div style={{ width: 220, flexShrink: 0 }}>
+      {(!isMobile || !selectedId) && (
+      <div style={{ width: isMobile ? "100%" : 220, flexShrink: 0 }}>
         <div
           style={{
             display: "flex",
@@ -213,8 +217,10 @@ export default function PersonasView() {
           )}
         </div>
       </div>
+      )}
 
       {/* Detail panel */}
+      {(!isMobile || !!selectedId) && (
       <div style={{ flex: 1 }}>
         {selected ? (
           <div>
@@ -222,6 +228,9 @@ export default function PersonasView() {
               sub={selected.label}
               action={
                 <div style={{ display: "flex", gap: 8 }}>
+                  {isMobile && (
+                    <button onClick={() => setSelectedId(null)} style={{ ...btnSecondary, fontSize: "0.8rem" }}>← Back</button>
+                  )}
                   <button onClick={() => openEdit(selected)} style={{ ...btnSecondary, fontSize: "0.8rem" }}>Edit</button>
                   <button
                     onClick={() => {
@@ -238,7 +247,7 @@ export default function PersonasView() {
               <span style={{ color: selected.color }}>{selected.code}</span> {selected.name}
             </SectionTitle>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "1.5rem" }}>
               <div>
                 {section("Audience", <p style={{ color: C.textSoft, fontSize: "0.85rem", margin: 0, lineHeight: 1.6 }}>{selected.audience || <em style={{ color: C.textVeryDim }}>Not defined</em>}</p>)}
                 {section("Role", <p style={{ color: C.textSoft, fontSize: "0.85rem", margin: 0, lineHeight: 1.6 }}>{selected.role || <em style={{ color: C.textVeryDim }}>Not defined</em>}</p>)}
@@ -303,6 +312,7 @@ export default function PersonasView() {
           </div>
         )}
       </div>
+      )}
 
       {/* Modal */}
       <Modal open={showModal} onClose={() => setShowModal(false)} title={editPersona ? "Edit Persona" : "New Persona"}>
