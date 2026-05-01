@@ -1,11 +1,13 @@
 import { type ReactNode } from "react";
 import { useStore } from "../../store/useStore";
 import { C } from "../../theme";
+import { useBreakpoint } from "../../hooks/useBreakpoint";
 import { SectionTitle } from "../ui/SectionTitle";
 import { Card } from "../ui/Card";
 
 export default function UserGuideView() {
   const appConfig = useStore((s) => s.appConfig);
+  const { isMobile } = useBreakpoint();
 
   const section = (title: string, content: ReactNode) => (
     <Card style={{ marginBottom: "1.25rem" }}>
@@ -51,12 +53,13 @@ export default function UserGuideView() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "200px 1fr",
+          gridTemplateColumns: isMobile ? "1fr" : "200px 1fr",
           gap: "1.5rem",
           alignItems: "start",
         }}
       >
         {/* Table of contents */}
+        {!isMobile && (
         <div
           style={{
             position: "sticky",
@@ -113,6 +116,7 @@ export default function UserGuideView() {
             </a>
           ))}
         </div>
+        )}
 
         {/* Guide content */}
         <div>

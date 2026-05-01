@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent } from "react";
 import { useStore } from "../../store/useStore";
 import { C, applyAccentColor } from "../../theme";
+import { useBreakpoint } from "../../hooks/useBreakpoint";
 import { SectionTitle } from "../ui/SectionTitle";
 import { Card } from "../ui/Card";
 import { btnPrimary, btnSecondary, btnDanger, inputStyle, labelStyle, formRow } from "../ui/Modal";
@@ -20,6 +21,8 @@ export default function SettingsView() {
   const updateAppConfig = useStore((s) => s.updateAppConfig);
   const resetToDefaults = useStore((s) => s.resetToDefaults);
   const importState = useStore((s) => s.importState);
+
+  const { isMobile, isTablet } = useBreakpoint();
 
   const [saved, setSaved] = useState(false);
   const [importError, setImportError] = useState("");
@@ -238,7 +241,7 @@ export default function SettingsView() {
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8 }}>
             {(
               [
                 ["personasLabel", "Personas section label"],
@@ -285,7 +288,7 @@ export default function SettingsView() {
               <Card key={ring.id} style={{ borderLeft: `3px solid ${ring.color}` }}>
                 {editRingId === ring.id ? (
                   <div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 8, marginBottom: "0.75rem" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr auto" : "1fr 1fr auto", gap: 8, marginBottom: "0.75rem" }}>
                       <input value={rLabel} onChange={(e) => setRLabel(e.target.value)} style={inputStyle} placeholder="Label" />
                       <input value={rDesc} onChange={(e) => setRDesc(e.target.value)} style={inputStyle} placeholder="Description" />
                       <input type="color" value={rColor} onChange={(e) => setRColor(e.target.value)} style={{ width: 40, height: 38, border: "none", background: "none", cursor: "pointer" }} />
@@ -416,7 +419,7 @@ export default function SettingsView() {
       {/* Time units */}
       {tab === "time" && (
         <Card style={{ maxWidth: 500 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
             <div style={formRow}>
               <label style={labelStyle}>Unit label (singular)</label>
               <input
@@ -463,7 +466,7 @@ export default function SettingsView() {
               />
             </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginTop: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "1fr 1fr" : "1fr 1fr 1fr", gap: 12, marginTop: 8 }}>
             <div style={formRow}>
               <label style={labelStyle}>Energy label</label>
               <input value={appConfig.energyLabel} onChange={(e) => updateAppConfig({ energyLabel: e.target.value })} onBlur={flashSave} style={inputStyle} />

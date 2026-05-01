@@ -1,18 +1,18 @@
 import { useState } from "react";
 import { useStore } from "../../store/useStore";
 import { C } from "../../theme";
+import { useBreakpoint } from "../../hooks/useBreakpoint";
 import { SectionTitle } from "../ui/SectionTitle";
 import { Card } from "../ui/Card";
 import { Tag } from "../ui/Badge";
 import { Modal, inputStyle, labelStyle, formRow, btnPrimary, btnSecondary, btnDanger } from "../ui/Modal";
-import type { Idea } from "../../types";
+import type { Idea, IdeaStage } from "../../types";
+
+type IdeaStatus = IdeaStage;
 
 function genId() {
   return `idea-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 }
-
-import type { IdeaStage } from "../../types";
-type IdeaStatus = IdeaStage;
 
 const STATUS_LABELS: Record<IdeaStatus, string> = {
   raw: "Raw",
@@ -34,6 +34,8 @@ export default function IdeasView() {
 
   const [showModal, setShowModal] = useState(false);
   const [editIdea, setEditIdea] = useState<Idea | null>(null);
+
+  const { isMobile, isTablet } = useBreakpoint();
 
   const [iText, setIText] = useState("");
   const [iSource, setISource] = useState("");
@@ -113,7 +115,7 @@ export default function IdeasView() {
       </SectionTitle>
 
       {/* Kanban */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "1fr 1fr" : "1fr 1fr 1fr", gap: "1rem" }}>
         {columns.map((col) => {
           const colIdeas = ideas.filter((i) => i.stage === col);
           return (

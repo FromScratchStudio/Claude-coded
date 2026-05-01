@@ -1,6 +1,7 @@
 import { useState, useMemo, Fragment } from "react";
 import { useStore } from "../../store/useStore";
 import { C } from "../../theme";
+import { useBreakpoint } from "../../hooks/useBreakpoint";
 import { SectionTitle } from "../ui/SectionTitle";
 import { Modal, inputStyle, labelStyle, formRow, btnPrimary, btnSecondary, btnDanger } from "../ui/Modal";
 import type { DayIndex, ScheduleSlot } from "../../types";
@@ -44,6 +45,7 @@ export default function WeeklyCalendarView() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [editSlot, setEditSlot] = useState<ScheduleSlot | null>(null);
+  const [activeMobileDay, setActiveMobileDay] = useState<DayIndex>(0);
 
   const [sDay, setSDay] = useState<DayIndex>(0);
   const [sHour, setSHour] = useState(9);
@@ -121,6 +123,8 @@ export default function WeeklyCalendarView() {
     return h === 0 ? `${m}min` : m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, "0")}`;
   };
 
+  const { isMobile } = useBreakpoint();
+
   return (
     <div>
       <SectionTitle
@@ -151,13 +155,82 @@ export default function WeeklyCalendarView() {
         <span style={{ marginLeft: 8, fontSize: "0.78rem", color: C.textMuted, alignSelf: "center" }}>{utCount} {timeUnitLabel} filled</span>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "50px repeat(7, 1fr)", border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden", background: C.surface }}>
-        <div style={{ background: C.surfaceAlt, borderBottom: `1px solid ${C.border}` }} />
-        {DAYS.map((day, i) => (
-          <div key={day} style={{ padding: "0.5rem", textAlign: "center", fontSize: "0.78rem", color: C.textMuted, fontWeight: 600, background: C.surfaceAlt, borderBottom: `1px solid ${C.border}`, borderLeft: i > 0 ? `1px solid ${C.border}` : undefined }}>
-            {day}
+      {/* Mobile: day tabs + single-day list */}
+      {isMobile && (
+        <div>
+          <div style={{ display: "flex", gap: 4, marginBottom: "0.75rem", overflowX: "auto", scrollbarWidth: "none" }}>
+            {DAYS.map((day, i) => {
+              const daySlots = weekSlots.filter((s) => s.day === i);
+              return (
+                <button
+                  key={day}
+                  onClick={() => setActiveMobileDay(i as DayIndex)}
+                  style={{
+                    flexShrink: 0,
+                    padding: "6px 14px",
+                    borderRadius: 6,
+                    background: activeMobileDay === i ? C.accent : C.surfaceAlt,
+                    border: `1px solid ${activeMobileDay === i ? C.accent : C.border}`,
+                    color: activeMobileDay === i ? "#fff" : C.textMuted,
+                    cursor: "pointer",
+                    fontSize: "0.8rem",
+                    fontWeight: activeMobileDay === i ? 600 : 400,
+                    position: "relative",
+                  }}
+                >
+                  {day}
+                  {daySlots.length > 0 && (
+                    <span style={{ marginLeft: 4, fontSize: "0.65rem", opacity: 0.8 }}>·{daySlots.length}</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
-        ))}
+          <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden", background: C.surface }}>
+            {HOURS.map((hour) => {
+              const slotsInCell = weekSlots.filter((s) => s.day === activeMobileDay && s.hour === hour);
+              return (
+                <div
+                  key={hour}
+                  onClick={() => openNewSlot(activeMobileDay, hour)}
+                  style={{ display: "flex", gap: 8, padding: "0.4rem 0.75rem", borderBottom: `1px solid ${C.border}`, cursor: "pointer", minHeight: SLOT_HEIGHT, alignItems: "flex-start", boxSizing: "border-box" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = `${C.accent}08`)}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                >
+                  <span style={{ fontSize: "0.68rem", color: C.textVeryDim, width: 36, flexShrink: 0, paddingTop: 2 }}>{hour}:00</span>
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
+                    {slotsInCell.map((slot) => {
+                      const slotMode = workModes.find((m) => m.id === slot.workModeId);
+                      const color = slotMode?.color ?? C.accent;
+                      return (
+                        <div
+                          key={slot.id}
+                          onClick={(e) => { e.stopPropagation(); openEditSlot(slot); }}
+                          style={{ background: `${color}25`, border: `1px solid ${color}60`, borderRadius: 4, padding: "3px 8px", fontSize: "0.75rem", color, cursor: "pointer" }}
+                        >
+                          {slot.utCount > 0 && <span style={{ marginRight: 4 }}>&#9670;</span>}
+                          {slot.note || slotMode?.name || "–"}
+                          <span style={{ marginLeft: 4, opacity: 0.6, fontSize: "0.68rem" }}>{fmtDuration(slot.durationMin)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Desktop: full 7-column grid */}
+      {!isMobile && (
+        <div style={{ display: "grid", gridTemplateColumns: "50px repeat(7, 1fr)", border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden", background: C.surface }}>
+          <div style={{ background: C.surfaceAlt, borderBottom: `1px solid ${C.border}` }} />
+          {DAYS.map((day, i) => (
+            <div key={day} style={{ padding: "0.5rem", textAlign: "center", fontSize: "0.78rem", color: C.textMuted, fontWeight: 600, background: C.surfaceAlt, borderBottom: `1px solid ${C.border}`, borderLeft: i > 0 ? `1px solid ${C.border}` : undefined }}>
+              {day}
+            </div>
+          ))}
         {HOURS.map((hour) => (
           <Fragment key={`row-${hour}`}>
             <div style={{ padding: "0.25rem 0.5rem", fontSize: "0.68rem", color: C.textVeryDim, textAlign: "right", borderBottom: `1px solid ${C.border}`, height: SLOT_HEIGHT, boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "flex-end", background: C.surfaceAlt }}>
@@ -193,7 +266,8 @@ export default function WeeklyCalendarView() {
             })}
           </Fragment>
         ))}
-      </div>
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 8, marginTop: "1rem", flexWrap: "wrap" }}>
         {workModes.map((mode) => (

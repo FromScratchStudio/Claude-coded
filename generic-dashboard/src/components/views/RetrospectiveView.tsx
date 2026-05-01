@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useStore } from "../../store/useStore";
 import { C } from "../../theme";
+import { useBreakpoint } from "../../hooks/useBreakpoint";
 import { SectionTitle } from "../ui/SectionTitle";
 import { Card } from "../ui/Card";
 import { ProgressBar } from "../ui/ProgressBar";
@@ -186,6 +187,8 @@ export default function RetrospectiveView() {
   const currentISOWeekKey = getISOWeekKey(new Date());
   const isFutureWeek = weekKey > currentISOWeekKey;
 
+  const { isMobile } = useBreakpoint();
+
   function handleSave() {
     upsertWeeklyRetro({
       weekKey,
@@ -242,7 +245,7 @@ export default function RetrospectiveView() {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "1.5rem", alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 320px", gap: "1.5rem", alignItems: "start" }}>
         {/* Left: form */}
         <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
           <Card>
