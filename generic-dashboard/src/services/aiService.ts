@@ -173,7 +173,7 @@ export function escapeHtml(str: string): string {
     .replace(/>/g, "&gt;");
 }
 
-export function renderMarkdown(text: string, textColor: string): string {
+export function renderMarkdown(text: string, headingColor: string): string {
   // First pass: extract and protect code blocks
   const codeBlocks: string[] = [];
   let processed = text.replace(/```[\s\S]*?```/g, (match) => {
@@ -194,9 +194,9 @@ export function renderMarkdown(text: string, textColor: string): string {
     )
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/\*([^*]+)\*/g, "<em>$1</em>")
-    .replace(/^### (.+)$/gm, `<div style="font-weight:700;font-size:0.92rem;margin:0.75rem 0 0.25rem;color:${textColor}">$1</div>`)
-    .replace(/^## (.+)$/gm, `<div style="font-weight:700;font-size:0.98rem;margin:0.75rem 0 0.25rem;color:${textColor}">$1</div>`)
-    .replace(/^# (.+)$/gm, `<div style="font-weight:700;font-size:1.05rem;margin:0.75rem 0 0.25rem;color:${textColor}">$1</div>`)
+    .replace(/^### (.+)$/gm, `<div style="font-weight:700;font-size:0.92rem;margin:0.75rem 0 0.25rem;color:${headingColor}">$1</div>`)
+    .replace(/^## (.+)$/gm, `<div style="font-weight:700;font-size:0.98rem;margin:0.75rem 0 0.25rem;color:${headingColor}">$1</div>`)
+    .replace(/^# (.+)$/gm, `<div style="font-weight:700;font-size:1.05rem;margin:0.75rem 0 0.25rem;color:${headingColor}">$1</div>`)
     .replace(/^[-*] (.+)$/gm, `<div style="padding-left:1.25rem;margin:0.15rem 0">· $1</div>`)
     .replace(/^\d+\. (.+)$/gm, `<div style="padding-left:1.25rem;margin:0.15rem 0">$1</div>`)
     .replace(/\n\n/g, "<br/><br/>")

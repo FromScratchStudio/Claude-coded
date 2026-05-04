@@ -2,12 +2,10 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useStore } from "../../store/useStore";
 import { C, FONT } from "../../theme";
 import { SectionTitle } from "../ui/SectionTitle";
-import { buildContextSnapshot, streamAiResponse, renderMarkdown as renderMd } from "../../services/aiService";
+import { buildContextSnapshot, streamAiResponse, renderMarkdown } from "../../services/aiService";
 import type { AiMessage } from "../../types";
 
-function renderMarkdown(text: string): string {
-  return renderMd(text, C.text);
-}
+const renderMsg = (text: string) => renderMarkdown(text, C.text);
 
 // ─── Suggested prompts ────────────────────────────────────────────────────────
 
@@ -380,7 +378,7 @@ export default function AiAdvisorView() {
                       >
                         {msg.role === "assistant" ? (
                           <div
-                            dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content || "…") }}
+                            dangerouslySetInnerHTML={{ __html: renderMsg(msg.content || "…") }}
                           />
                         ) : (
                           msg.content
@@ -403,7 +401,7 @@ export default function AiAdvisorView() {
                         gap: 6,
                       }}
                     >
-                      <span style={{ animation: "pulse 1.2s ease-in-out infinite" }}>●</span>
+                      <span style={{ opacity: 0.5 }}>●</span>
                       <span>Thinking…</span>
                     </div>
                   </div>

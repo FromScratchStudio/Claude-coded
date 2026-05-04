@@ -46,6 +46,12 @@ const REVIEW_MODE_DESCRIPTIONS: Record<ReviewMode, string> = {
   validate: "Assess feasibility, alignment with current goals, and prioritization recommendations.",
 };
 
+const ENHANCE_PROMPT_TEMPLATE = (scopeLabel: string, context: string, ideaList: string) =>
+  `Below are ${scopeLabel} from my idea bank. For each one, provide:\n- A concrete enhancement suggestion or missing angle\n- One specific next action to develop it further\nBe concise (2-3 lines per idea).${context}\n\nIdeas:\n${ideaList}`;
+
+const VALIDATE_PROMPT_TEMPLATE = (scopeLabel: string, context: string, ideaList: string) =>
+  `Below are ${scopeLabel} from my idea bank. For each one:\n- Assess its feasibility and strategic fit with current goals\n- Give a priority score (High/Medium/Low) with a one-sentence rationale\n- Flag any risks or blockers\nBe concise.${context}\n\nIdeas:\n${ideaList}`;
+
 export default function IdeasView() {
   const ideas = useStore((s) => s.ideas);
   const addIdea = useStore((s) => s.addIdea);
@@ -171,10 +177,9 @@ export default function IdeasView() {
       appConfig.aiSystemPrompt?.trim() ||
       "You are a strategic advisor embedded in a project management dashboard. Provide concise, actionable insights.";
 
-    const userContent =
-      reviewMode === "enhance"
-        ? `Below are ${REVIEW_SCOPE_LABELS[reviewScope].toLowerCase()} from my idea bank. For each one, provide:\n- A concrete enhancement suggestion or missing angle\n- One specific next action to develop it further\nBe concise (2-3 lines per idea).${context}\n\nIdeas:\n${ideaList}`
-        : `Below are ${REVIEW_SCOPE_LABELS[reviewScope].toLowerCase()} from my idea bank. For each one:\n- Assess its feasibility and strategic fit with current goals\n- Give a priority score (High/Medium/Low) with a one-sentence rationale\n- Flag any risks or blockers\nBe concise.${context}\n\nIdeas:\n${ideaList}`;
+    const userContent = reviewMode === "enhance"
+      ? ENHANCE_PROMPT_TEMPLATE(REVIEW_SCOPE_LABELS[reviewScope].toLowerCase(), context, ideaList)
+      : VALIDATE_PROMPT_TEMPLATE(REVIEW_SCOPE_LABELS[reviewScope].toLowerCase(), context, ideaList);
 
     const messages: AiMessage[] = [
       { role: "system", content: systemContent, ts: 0 },
@@ -596,7 +601,7 @@ export default function IdeasView() {
                   <div dangerouslySetInnerHTML={{ __html: renderMarkdown(reviewOutput, C.text) }} />
                 ) : (
                   <span style={{ color: C.textDim, display: "flex", alignItems: "center", gap: 6 }}>
-                    <span>●</span> Analysing…
+                    <span>●</span> Analyzing…
                   </span>
                 )}
               </div>
