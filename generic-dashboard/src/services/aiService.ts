@@ -164,6 +164,45 @@ export function buildContextSnapshot(s: SnapshotState): string {
   return lines.join("\n");
 }
 
+// ─── Markdown renderer (shared) ───────────────────────────────────────────────
+
+export function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+export function renderMarkdown(text: string, textColor: string): string {
+  // First pass: extract and protect code blocks
+  const codeBlocks: string[] = [];
+  let processed = text.replace(/```[\s\S]*?```/g, (match) => {
+    const inner = match.slice(3, -3).replace(/^[^\n]*\n/, "");
+    const placeholder = `\x00CODEBLOCK${codeBlocks.length}\x00`;
+    codeBlocks.push(
+      `<pre style="background:#06080c;border:1px solid #1f2535;border-radius:6px;padding:0.75rem;overflow-x:auto;font-family:monospace;font-size:0.82rem;margin:0.5rem 0">${escapeHtml(inner)}</pre>`
+    );
+    return placeholder;
+  });
+
+  processed = escapeHtml(processed);
+
+  return processed
+    .replace(/\x00CODEBLOCK(\d+)\x00/g, (_m, i) => codeBlocks[Number(i)])
+    .replace(/`([^`]+)`/g, (_m, code) =>
+      `<code style="background:#06080c;border:1px solid #1f2535;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:0.85em">${escapeHtml(code)}</code>`
+    )
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*]+)\*/g, "<em>$1</em>")
+    .replace(/^### (.+)$/gm, `<div style="font-weight:700;font-size:0.92rem;margin:0.75rem 0 0.25rem;color:${textColor}">$1</div>`)
+    .replace(/^## (.+)$/gm, `<div style="font-weight:700;font-size:0.98rem;margin:0.75rem 0 0.25rem;color:${textColor}">$1</div>`)
+    .replace(/^# (.+)$/gm, `<div style="font-weight:700;font-size:1.05rem;margin:0.75rem 0 0.25rem;color:${textColor}">$1</div>`)
+    .replace(/^[-*] (.+)$/gm, `<div style="padding-left:1.25rem;margin:0.15rem 0">· $1</div>`)
+    .replace(/^\d+\. (.+)$/gm, `<div style="padding-left:1.25rem;margin:0.15rem 0">$1</div>`)
+    .replace(/\n\n/g, "<br/><br/>")
+    .replace(/\n/g, "<br/>");
+}
+
 // ─── Streaming API call ───────────────────────────────────────────────────────
 
 export async function* streamAiResponse(

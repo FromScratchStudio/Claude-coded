@@ -2,53 +2,11 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useStore } from "../../store/useStore";
 import { C, FONT } from "../../theme";
 import { SectionTitle } from "../ui/SectionTitle";
-import { buildContextSnapshot, streamAiResponse } from "../../services/aiService";
+import { buildContextSnapshot, streamAiResponse, renderMarkdown as renderMd } from "../../services/aiService";
 import type { AiMessage } from "../../types";
 
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
 function renderMarkdown(text: string): string {
-  // First pass: extract and protect code blocks to avoid escaping their contents
-  const codeBlocks: string[] = [];
-  let processed = text.replace(/```[\s\S]*?```/g, (match) => {
-    const inner = match.slice(3, -3).replace(/^[^\n]*\n/, "");
-    const placeholder = `\x00CODEBLOCK${codeBlocks.length}\x00`;
-    codeBlocks.push(
-      `<pre style="background:#06080c;border:1px solid #1f2535;border-radius:6px;padding:0.75rem;overflow-x:auto;font-family:monospace;font-size:0.82rem;margin:0.5rem 0">${escapeHtml(inner)}</pre>`
-    );
-    return placeholder;
-  });
-
-  // Escape all remaining HTML in the text
-  processed = escapeHtml(processed);
-
-  return processed
-    // Restore code blocks (already escaped inside)
-    .replace(/\x00CODEBLOCK(\d+)\x00/g, (_m, i) => codeBlocks[Number(i)])
-    // Inline code
-    .replace(/`([^`]+)`/g, (_m, code) =>
-      `<code style="background:#06080c;border:1px solid #1f2535;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:0.85em">${escapeHtml(code)}</code>`
-    )
-    // Bold
-    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-    // Italic
-    .replace(/\*([^*]+)\*/g, "<em>$1</em>")
-    // Headings
-    .replace(/^### (.+)$/gm, `<div style="font-weight:700;font-size:0.92rem;margin:0.75rem 0 0.25rem;color:${C.text}">$1</div>`)
-    .replace(/^## (.+)$/gm, `<div style="font-weight:700;font-size:0.98rem;margin:0.75rem 0 0.25rem;color:${C.text}">$1</div>`)
-    .replace(/^# (.+)$/gm, `<div style="font-weight:700;font-size:1.05rem;margin:0.75rem 0 0.25rem;color:${C.text}">$1</div>`)
-    // Unordered lists
-    .replace(/^[-*] (.+)$/gm, `<div style="padding-left:1.25rem;margin:0.15rem 0">· $1</div>`)
-    // Numbered lists
-    .replace(/^\d+\. (.+)$/gm, `<div style="padding-left:1.25rem;margin:0.15rem 0">$1</div>`)
-    // Line breaks
-    .replace(/\n\n/g, "<br/><br/>")
-    .replace(/\n/g, "<br/>");
+  return renderMd(text, C.text);
 }
 
 // ─── Suggested prompts ────────────────────────────────────────────────────────
