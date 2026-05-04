@@ -75,9 +75,8 @@ export interface AppConfig {
   quarterThemeLabel: string;
 
   // AI Advisor
-  aiApiKey: string;
-  aiBaseUrl: string;
-  aiModel: string;
+  aiProvider: AiProviderId;
+  aiProviders: Partial<Record<AiProviderId, AiProviderConfig>>;
   aiSystemPrompt: string;
 
   // Module flags
@@ -358,6 +357,15 @@ export interface ScheduleSlot {
 }
 
 // ─── AI Advisor ───────────────────────────────────────────────────────────────
+
+export type AiProviderId = "openai" | "anthropic" | "gemini" | "ollama" | "custom";
+
+export interface AiProviderConfig {
+  apiKey: string;
+  model: string;
+  /** Custom base URL override (used for "custom" and "ollama" providers). */
+  baseUrl?: string;
+}
 
 export interface AiMessage {
   role: "user" | "assistant" | "system";

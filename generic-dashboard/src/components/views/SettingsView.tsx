@@ -5,7 +5,8 @@ import { useBreakpoint } from "../../hooks/useBreakpoint";
 import { SectionTitle } from "../ui/SectionTitle";
 import { Card } from "../ui/Card";
 import { btnPrimary, btnSecondary, btnDanger, inputStyle, labelStyle, formRow } from "../ui/Modal";
-import type { RingConfig, AllocationCategory } from "../../types";
+import type { RingConfig, AllocationCategory, AiProviderId, AiProviderConfig, AppConfig } from "../../types";
+import { AI_PROVIDERS } from "../../services/aiService";
 
 const ACCENT_PRESETS = [
   "#4c7fc9", "#7c5cd1", "#27ae7a", "#e07a3c",
@@ -28,6 +29,7 @@ export default function SettingsView() {
 
   const [saved, setSaved] = useState(false);
   const [importError, setImportError] = useState("");
+  const [exportIncludeApiKeys, setExportIncludeApiKeys] = useState(false);
 
   // Tab
   type SettingsTab = "general" | "rings" | "categories" | "modules" | "time" | "data" | "ai";
@@ -130,7 +132,23 @@ export default function SettingsView() {
 
   function exportData() {
     const state = useStore.getState();
-    const data = JSON.stringify(state, null, 2);
+    let exportable: typeof state = state;
+
+    if (!exportIncludeApiKeys) {
+      // Strip all API keys from provider configs before exporting
+      const sanitizedProviders: Partial<Record<AiProviderId, AiProviderConfig>> = {};
+      const providers = state.appConfig.aiProviders ?? {};
+      for (const id of Object.keys(providers) as AiProviderId[]) {
+        const cfg = providers[id];
+        if (cfg) sanitizedProviders[id] = { ...cfg, apiKey: "" };
+      }
+      exportable = {
+        ...state,
+        appConfig: { ...state.appConfig, aiProviders: sanitizedProviders },
+      };
+    }
+
+    const data = JSON.stringify(exportable, null, 2);
     const blob = new Blob([data], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -499,78 +517,11 @@ export default function SettingsView() {
 
       {/* AI Advisor */}
       {tab === "ai" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: 600 }}>
-          <Card style={{ background: `${C.amber}08`, border: `1px solid ${C.amber}30` }}>
-            <div style={{ fontSize: "0.78rem", color: C.amber, display: "flex", alignItems: "center", gap: 6 }}>
-              <span>🔒</span>
-              <span>
-                Your API key is stored <strong>only in your browser&apos;s local storage</strong> and is sent directly to the AI provider you configure. It is never transmitted to any other server. <strong>Note: it will be included in dashboard exports — do not share export files.</strong>
-              </span>
-            </div>
-          </Card>
-
-          <Card>
-            <div style={formRow}>
-              <label style={labelStyle}>API Key</label>
-              <input
-                type="password"
-                value={appConfig.aiApiKey ?? ""}
-                onChange={(e) => updateAppConfig({ aiApiKey: e.target.value })}
-                onBlur={flashSave}
-                style={inputStyle}
-                placeholder="sk-…"
-                autoComplete="off"
-              />
-            </div>
-
-            <div style={formRow}>
-              <label style={labelStyle}>Base URL</label>
-              <input
-                value={appConfig.aiBaseUrl ?? "https://api.openai.com/v1"}
-                onChange={(e) => updateAppConfig({ aiBaseUrl: e.target.value })}
-                onBlur={flashSave}
-                style={inputStyle}
-                placeholder="https://api.openai.com/v1"
-              />
-              <div style={{ fontSize: "0.72rem", color: C.textDim, marginTop: 4 }}>
-                OpenAI: https://api.openai.com/v1 · Ollama: http://localhost:11434/v1
-              </div>
-            </div>
-
-            <div style={formRow}>
-              <label style={labelStyle}>Model</label>
-              <input
-                value={appConfig.aiModel ?? "gpt-4o-mini"}
-                onChange={(e) => updateAppConfig({ aiModel: e.target.value })}
-                onBlur={flashSave}
-                style={inputStyle}
-                placeholder="gpt-4o-mini"
-              />
-              <div style={{ fontSize: "0.72rem", color: C.textDim, marginTop: 4 }}>
-                e.g. gpt-4o-mini · gpt-4o · claude-3-5-sonnet-20241022 · llama3.2
-              </div>
-            </div>
-
-            <div style={formRow}>
-              <label style={labelStyle}>System prompt</label>
-              <textarea
-                value={appConfig.aiSystemPrompt ?? ""}
-                onChange={(e) => updateAppConfig({ aiSystemPrompt: e.target.value })}
-                onBlur={flashSave}
-                style={{
-                  ...inputStyle,
-                  minHeight: 100,
-                  resize: "vertical",
-                  lineHeight: 1.5,
-                }}
-                placeholder="You are a strategic advisor embedded in a project management dashboard…"
-              />
-              <div style={{ fontSize: "0.72rem", color: C.textDim, marginTop: 4 }}>
-                This prompt prefixes every conversation. The current dashboard snapshot is appended automatically when enabled.
-              </div>
-            </div>
-          </Card>
-        </div>
+        <AiAdvisorSettingsTab
+          appConfig={appConfig}
+          updateAppConfig={updateAppConfig}
+          flashSave={flashSave}
+        />
       )}
 
       {/* Data */}
@@ -583,6 +534,35 @@ export default function SettingsView() {
             <p style={{ fontSize: "0.8rem", color: C.textMuted, margin: "0 0 0.75rem" }}>
               Download all data as a JSON file for backup or transfer.
             </p>
+
+            {/* API key inclusion toggle */}
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: "0.85rem",
+                cursor: "pointer",
+                userSelect: "none",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={exportIncludeApiKeys}
+                onChange={(e) => setExportIncludeApiKeys(e.target.checked)}
+                style={{ accentColor: C.accent, width: 15, height: 15 }}
+              />
+              <span style={{ fontSize: "0.8rem", color: C.textSoft }}>
+                Include API keys in export
+              </span>
+            </label>
+            {!exportIncludeApiKeys && (
+              <p style={{ fontSize: "0.74rem", color: C.amber, margin: "0 0 0.75rem", display: "flex", alignItems: "center", gap: 5 }}>
+                <span>🔒</span>
+                <span>API keys will be stripped from the export file for safety. Enable the checkbox above to include them.</span>
+              </p>
+            )}
+
             <button onClick={exportData} style={btnPrimary}>
               Export JSON
             </button>
@@ -630,6 +610,181 @@ export default function SettingsView() {
           </Card>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── AI Advisor settings sub-component ───────────────────────────────────────
+
+function AiAdvisorSettingsTab({
+  appConfig,
+  updateAppConfig,
+  flashSave,
+}: {
+  appConfig: AppConfig;
+  updateAppConfig: (u: Partial<AppConfig>) => void;
+  flashSave: () => void;
+}) {
+  const selectedProvider = (appConfig.aiProvider ?? "openai") as AiProviderId;
+  const providerDef = AI_PROVIDERS.find((p) => p.id === selectedProvider)!;
+  const providerConfig: AiProviderConfig = {
+    apiKey: "",
+    model: providerDef?.defaultModel ?? "",
+    ...(appConfig.aiProviders?.[selectedProvider] ?? {}),
+  };
+
+  function setProviderField(field: keyof AiProviderConfig, value: string) {
+    const updated: AiProviderConfig = { ...providerConfig, [field]: value };
+    updateAppConfig({
+      aiProviders: { ...appConfig.aiProviders, [selectedProvider]: updated },
+    });
+  }
+
+  const modelIsCustom = !providerDef?.models.includes(providerConfig.model) && providerConfig.model !== "";
+  const showBaseUrl = selectedProvider === "custom" || selectedProvider === "ollama";
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: 600 }}>
+      {/* Security notice */}
+      <Card style={{ background: `${C.amber}08`, border: `1px solid ${C.amber}30` }}>
+        <div style={{ fontSize: "0.78rem", color: C.amber, display: "flex", alignItems: "flex-start", gap: 6 }}>
+          <span>🔒</span>
+          <span>
+            API keys are stored <strong>only in your browser&apos;s local storage</strong> and sent directly to the provider you configure. They are never transmitted elsewhere.
+            Use the <strong>Data → Export</strong> toggle to control whether keys are included in backup files.
+          </span>
+        </div>
+      </Card>
+
+      {/* Provider selector */}
+      <Card>
+        <div style={{ ...formRow, marginBottom: "1rem" }}>
+          <label style={labelStyle}>Provider</label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+            {AI_PROVIDERS.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => {
+                  updateAppConfig({ aiProvider: p.id });
+                  flashSave();
+                }}
+                style={{
+                  padding: "0.35rem 0.85rem",
+                  borderRadius: 6,
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "0.8rem",
+                  fontWeight: selectedProvider === p.id ? 700 : 400,
+                  background: selectedProvider === p.id ? C.accent : C.surfaceAlt,
+                  color: selectedProvider === p.id ? "#fff" : C.textSoft,
+                  transition: "background 0.15s",
+                }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Model selector */}
+        <div style={formRow}>
+          <label style={labelStyle}>Model</label>
+          {providerDef?.models.length > 0 && (
+            <select
+              value={modelIsCustom ? "__custom__" : (providerConfig.model || providerDef.defaultModel)}
+              onChange={(e) => {
+                if (e.target.value !== "__custom__") {
+                  setProviderField("model", e.target.value);
+                  flashSave();
+                }
+              }}
+              style={{ ...inputStyle, marginBottom: 6 }}
+            >
+              {providerDef.models.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+              <option value="__custom__">Custom…</option>
+            </select>
+          )}
+          <input
+            value={providerConfig.model}
+            onChange={(e) => setProviderField("model", e.target.value)}
+            onBlur={flashSave}
+            style={inputStyle}
+            placeholder={providerDef?.defaultModel || "model-name"}
+          />
+        </div>
+
+        {/* API Key (hidden for Ollama which doesn't need one) */}
+        {providerDef?.requiresApiKey && (
+          <div style={formRow}>
+            <label style={labelStyle}>API Key</label>
+            <input
+              type="password"
+              value={providerConfig.apiKey}
+              onChange={(e) => setProviderField("apiKey", e.target.value)}
+              onBlur={flashSave}
+              style={inputStyle}
+              placeholder={
+                selectedProvider === "anthropic" ? "sk-ant-…" :
+                selectedProvider === "gemini" ? "AIza…" :
+                "sk-…"
+              }
+              autoComplete="off"
+            />
+          </div>
+        )}
+
+        {/* Base URL — editable only for custom / ollama */}
+        <div style={formRow}>
+          <label style={labelStyle}>Base URL</label>
+          <input
+            value={providerConfig.baseUrl ?? ""}
+            onChange={(e) => setProviderField("baseUrl", e.target.value)}
+            onBlur={flashSave}
+            style={{ ...inputStyle, color: showBaseUrl ? undefined : C.textDim }}
+            placeholder={providerDef?.baseUrl ?? "https://…"}
+            readOnly={!showBaseUrl}
+          />
+          {!showBaseUrl && (
+            <div style={{ fontSize: "0.72rem", color: C.textDim, marginTop: 4 }}>
+              {providerDef?.baseUrl}
+            </div>
+          )}
+          {showBaseUrl && selectedProvider === "ollama" && (
+            <div style={{ fontSize: "0.72rem", color: C.textDim, marginTop: 4 }}>
+              Default: http://localhost:11434/v1 — leave blank to use default
+            </div>
+          )}
+          {showBaseUrl && selectedProvider === "custom" && (
+            <div style={{ fontSize: "0.72rem", color: C.textDim, marginTop: 4 }}>
+              Any OpenAI-compatible endpoint, e.g. https://openrouter.ai/api/v1
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* System prompt */}
+      <Card>
+        <div style={formRow}>
+          <label style={labelStyle}>System prompt</label>
+          <textarea
+            value={appConfig.aiSystemPrompt ?? ""}
+            onChange={(e) => updateAppConfig({ aiSystemPrompt: e.target.value })}
+            onBlur={flashSave}
+            style={{
+              ...inputStyle,
+              minHeight: 100,
+              resize: "vertical",
+              lineHeight: 1.5,
+            }}
+            placeholder="You are a strategic advisor embedded in a project management dashboard…"
+          />
+          <div style={{ fontSize: "0.72rem", color: C.textDim, marginTop: 4 }}>
+            This prompt prefixes every conversation. The current dashboard snapshot is appended automatically when enabled.
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }

@@ -746,6 +746,23 @@ export const useStore = create<StoreState & StoreActions>()(
               ...persisted.appConfig.modules,
             },
           };
+
+          // ── Migrate old flat AI config (aiApiKey / aiBaseUrl / aiModel) ──────
+          // These fields no longer exist on AppConfig but may still be present
+          // in old localStorage snapshots. Migrate them into the new aiProviders
+          // structure under the "openai" provider key.
+          const pc = persisted.appConfig as unknown as Record<string, unknown>;
+          if (!persisted.appConfig.aiProvider && pc["aiApiKey"] !== undefined) {
+            persisted.appConfig.aiProvider = "openai";
+            persisted.appConfig.aiProviders = {
+              ...persisted.appConfig.aiProviders,
+              openai: {
+                apiKey: (pc["aiApiKey"] as string) ?? "",
+                model: (pc["aiModel"] as string) || "gpt-4o-mini",
+                baseUrl: (pc["aiBaseUrl"] as string) || undefined,
+              },
+            };
+          }
         }
         return { ...currentState, ...persisted };
       },

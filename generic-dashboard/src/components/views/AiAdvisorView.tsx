@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useStore } from "../../store/useStore";
 import { C, FONT } from "../../theme";
 import { SectionTitle } from "../ui/SectionTitle";
-import { buildContextSnapshot, streamAiResponse, renderMarkdown } from "../../services/aiService";
+import { buildContextSnapshot, streamAiResponse, renderMarkdown, AI_PROVIDERS } from "../../services/aiService";
 import type { AiMessage } from "../../types";
 
 const renderMsg = (text: string) => renderMarkdown(text, C.text);
@@ -56,8 +56,12 @@ export default function AiAdvisorView() {
   async function sendMessage(text: string) {
     if (!text.trim() || isStreaming) return;
 
-    const apiKey = appConfig.aiApiKey?.trim();
-    if (!apiKey) {
+    const providerId = appConfig.aiProvider ?? "openai";
+    const providerDef = AI_PROVIDERS.find((p) => p.id === providerId);
+    const providerConfig = appConfig.aiProviders?.[providerId];
+    const apiKey = providerConfig?.apiKey?.trim() ?? "";
+
+    if (providerDef?.requiresApiKey && !apiKey) {
       setError("No API key configured. Please set your API key in Settings → AI Advisor.");
       return;
     }
@@ -97,14 +101,18 @@ export default function AiAdvisorView() {
     const controller = new AbortController();
     abortRef.current = controller;
 
+    // Resolve base URL: use provider default unless the config has a custom override
+    const defaultBaseUrl = providerDef?.baseUrl ?? "https://api.openai.com/v1";
+    const baseUrl = providerConfig?.baseUrl?.trim() || defaultBaseUrl;
+    const model = providerConfig?.model?.trim() || providerDef?.defaultModel || "gpt-4o-mini";
+
     try {
       let accumulated = "";
-      const gen = streamAiResponse(apiMessages, {
-        apiKey,
-        baseUrl: appConfig.aiBaseUrl || "https://api.openai.com/v1",
-        model: appConfig.aiModel || "gpt-4o-mini",
-        systemPrompt: systemContent,
-      }, controller.signal);
+      const gen = streamAiResponse(
+        apiMessages,
+        { provider: providerId, apiKey, baseUrl, model, systemPrompt: systemContent },
+        controller.signal
+      );
 
       for await (const chunk of gen) {
         accumulated += chunk;
@@ -151,7 +159,9 @@ export default function AiAdvisorView() {
     sendMessage(prompt);
   }
 
-  const hasApiKey = !!appConfig.aiApiKey?.trim();
+  const providerDef = AI_PROVIDERS.find((p) => p.id === (appConfig.aiProvider ?? "openai"));
+  const activeProviderConfig = appConfig.aiProviders?.[appConfig.aiProvider ?? "openai"];
+  const hasApiKey = !providerDef?.requiresApiKey || !!activeProviderConfig?.apiKey?.trim();
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -177,7 +187,7 @@ export default function AiAdvisorView() {
           <div>
             <span style={{ color: C.amber, fontWeight: 600, fontSize: "0.85rem" }}>⚠ API key required</span>
             <p style={{ margin: "0.25rem 0 0", fontSize: "0.8rem", color: C.textMuted }}>
-              Set your OpenAI (or compatible) API key in Settings to use the AI Advisor.
+              Set your {providerDef?.label ?? "provider"} API key in Settings → AI Advisor.
             </p>
           </div>
           <button
@@ -556,7 +566,7 @@ export default function AiAdvisorView() {
 
       {/* Info footer */}
       <div style={{ fontSize: "0.72rem", color: C.textVeryDim, textAlign: "center" }}>
-        Your API key is sent directly to {appConfig.aiBaseUrl || "the AI provider"} from your browser. It is stored only in your browser&apos;s local storage.
+        Your API key is sent directly to {providerDef?.label ?? "the AI provider"} from your browser. It is stored only in your browser&apos;s local storage.
       </div>
     </div>
   );
