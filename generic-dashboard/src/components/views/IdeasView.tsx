@@ -418,7 +418,11 @@ export default function IdeasView() {
               >
                 <span>⚠ No API key configured.</span>
                 <button
-                  onClick={() => useStore.getState().setActiveView("settings")}
+                  onClick={() => {
+                    const store = useStore.getState();
+                    store.setSettingsDeepLinkTab("ai");
+                    store.setActiveView("settings");
+                  }}
                   style={{ background: "none", border: "none", color: C.accent, cursor: "pointer", fontSize: "0.78rem", textDecoration: "underline", padding: 0 }}
                 >
                   Open Settings → AI Advisor

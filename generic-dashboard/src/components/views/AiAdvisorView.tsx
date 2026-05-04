@@ -27,9 +27,11 @@ export default function AiAdvisorView() {
   const createAiConversation = useStore((s) => s.createAiConversation);
   const appendAiMessage = useStore((s) => s.appendAiMessage);
   const updateLastAiMessage = useStore((s) => s.updateLastAiMessage);
+  const removeLastAiMessage = useStore((s) => s.removeLastAiMessage);
   const removeAiConversation = useStore((s) => s.removeAiConversation);
   const setActiveConversationId = useStore((s) => s.setActiveConversationId);
   const setActiveView = useStore((s) => s.setActiveView);
+  const setSettingsDeepLinkTab = useStore((s) => s.setSettingsDeepLinkTab);
 
   const [input, setInput] = useState("");
   const [includeSnapshot, setIncludeSnapshot] = useState(true);
@@ -38,7 +40,7 @@ export default function AiAdvisorView() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const abortRef = useRef<boolean>(false);
+  const abortRef = useRef<AbortController | null>(null);
 
   const activeConversation = aiConversations.find((c) => c.id === activeConversationId) ?? null;
 
@@ -92,7 +94,8 @@ export default function AiAdvisorView() {
     appendAiMessage(convId, assistantMsg);
 
     setIsStreaming(true);
-    abortRef.current = false;
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
       let accumulated = "";
@@ -101,19 +104,29 @@ export default function AiAdvisorView() {
         baseUrl: appConfig.aiBaseUrl || "https://api.openai.com/v1",
         model: appConfig.aiModel || "gpt-4o-mini",
         systemPrompt: systemContent,
-      });
+      }, controller.signal);
 
       for await (const chunk of gen) {
-        if (abortRef.current) break;
         accumulated += chunk;
         updateLastAiMessage(convId, accumulated);
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      updateLastAiMessage(convId, `⚠ Error: ${message}`);
-      setError(message);
+      if (err instanceof Error && err.name === "AbortError") {
+        // User stopped the stream — remove the placeholder if no content arrived
+        const conv = useStore.getState().aiConversations.find((c) => c.id === convId);
+        const msgs = conv?.messages ?? [];
+        const lastMsg = msgs[msgs.length - 1];
+        if (lastMsg?.role === "assistant" && !lastMsg.content) {
+          removeLastAiMessage(convId);
+        }
+      } else {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        updateLastAiMessage(convId, `⚠ Error: ${message}`);
+        setError(message);
+      }
     } finally {
       setIsStreaming(false);
+      abortRef.current = null;
     }
   }
 
@@ -125,7 +138,7 @@ export default function AiAdvisorView() {
   }
 
   function handleStop() {
-    abortRef.current = true;
+    abortRef.current?.abort();
   }
 
   function handleNewConversation() {
@@ -135,9 +148,6 @@ export default function AiAdvisorView() {
   }
 
   function handleSuggestedPrompt(prompt: string) {
-    if (!activeConversationId) {
-      createAiConversation(prompt.slice(0, 60));
-    }
     sendMessage(prompt);
   }
 
@@ -171,7 +181,10 @@ export default function AiAdvisorView() {
             </p>
           </div>
           <button
-            onClick={() => setActiveView("settings")}
+            onClick={() => {
+              setSettingsDeepLinkTab("ai");
+              setActiveView("settings");
+            }}
             style={{
               background: C.amber,
               border: "none",

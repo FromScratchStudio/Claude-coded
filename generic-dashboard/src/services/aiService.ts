@@ -30,7 +30,16 @@ export interface SnapshotState {
 
 // ─── Context snapshot builder ─────────────────────────────────────────────────
 
+// Maximum characters allowed in a context snapshot to avoid oversized prompts.
+const SNAPSHOT_MAX_CHARS = 4000;
+
 export function buildContextSnapshot(s: SnapshotState): string {
+  const raw = buildContextSnapshotRaw(s);
+  if (raw.length <= SNAPSHOT_MAX_CHARS) return raw;
+  return raw.slice(0, SNAPSHOT_MAX_CHARS) + "\n\n[Dashboard snapshot truncated for length]";
+}
+
+function buildContextSnapshotRaw(s: SnapshotState): string {
   const lines: string[] = [];
 
   lines.push(`Dashboard: ${s.appConfig.appName}`);
@@ -187,8 +196,9 @@ export function renderMarkdown(text: string, headingColor: string): string {
 
   processed = escapeHtml(processed);
 
+  // Apply all inline transformations first, then restore code blocks last
+  // so that pre-block HTML is never touched by the inline regexes.
   return processed
-    .replace(/\x00CODEBLOCK(\d+)\x00/g, (_m, i) => codeBlocks[Number(i)])
     .replace(/`([^`]+)`/g, (_m, code) =>
       `<code style="background:#06080c;border:1px solid #1f2535;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:0.85em">${escapeHtml(code)}</code>`
     )
@@ -200,14 +210,16 @@ export function renderMarkdown(text: string, headingColor: string): string {
     .replace(/^[-*] (.+)$/gm, `<div style="padding-left:1.25rem;margin:0.15rem 0">· $1</div>`)
     .replace(/^\d+\. (.+)$/gm, `<div style="padding-left:1.25rem;margin:0.15rem 0">$1</div>`)
     .replace(/\n\n/g, "<br/><br/>")
-    .replace(/\n/g, "<br/>");
+    .replace(/\n/g, "<br/>")
+    .replace(/\x00CODEBLOCK(\d+)\x00/g, (_m, i) => codeBlocks[Number(i)]);
 }
 
 // ─── Streaming API call ───────────────────────────────────────────────────────
 
 export async function* streamAiResponse(
   messages: AiMessage[],
-  config: AiConfig
+  config: AiConfig,
+  signal?: AbortSignal
 ): AsyncGenerator<string> {
   const baseUrl = config.baseUrl.replace(/\/$/, "");
 
@@ -232,6 +244,7 @@ export async function* streamAiResponse(
       Authorization: `Bearer ${config.apiKey}`,
     },
     body: JSON.stringify(payload),
+    signal,
   });
 
   if (!response.ok) {
@@ -245,19 +258,12 @@ export async function* streamAiResponse(
   const decoder = new TextDecoder();
   let buffer = "";
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-
+  function* parseLines(chunk: string): Generator<string> {
+    const lines = chunk.split("\n");
     for (const line of lines) {
       const trimmed = line.trim();
       if (!trimmed || trimmed === "data: [DONE]") continue;
       if (!trimmed.startsWith("data: ")) continue;
-
       try {
         const json = JSON.parse(trimmed.slice(6));
         const delta = json.choices?.[0]?.delta?.content;
@@ -269,4 +275,18 @@ export async function* streamAiResponse(
       }
     }
   }
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+
+    yield* parseLines(lines.join("\n"));
+  }
+
+  // Flush any remaining content in the buffer (stream closed without trailing newline)
+  yield* parseLines(buffer);
 }

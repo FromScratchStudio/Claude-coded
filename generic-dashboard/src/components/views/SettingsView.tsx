@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from "react";
+import { useState, useEffect, type ChangeEvent } from "react";
 import { useStore } from "../../store/useStore";
 import { C, applyAccentColor } from "../../theme";
 import { useBreakpoint } from "../../hooks/useBreakpoint";
@@ -21,6 +21,8 @@ export default function SettingsView() {
   const updateAppConfig = useStore((s) => s.updateAppConfig);
   const resetToDefaults = useStore((s) => s.resetToDefaults);
   const importState = useStore((s) => s.importState);
+  const settingsDeepLinkTab = useStore((s) => s.settingsDeepLinkTab);
+  const setSettingsDeepLinkTab = useStore((s) => s.setSettingsDeepLinkTab);
 
   const { isMobile, isTablet } = useBreakpoint();
 
@@ -28,7 +30,17 @@ export default function SettingsView() {
   const [importError, setImportError] = useState("");
 
   // Tab
-  const [tab, setTab] = useState<"general" | "rings" | "categories" | "modules" | "time" | "data" | "ai">("general");
+  type SettingsTab = "general" | "rings" | "categories" | "modules" | "time" | "data" | "ai";
+  const VALID_SETTINGS_TABS: SettingsTab[] = ["general", "rings", "categories", "modules", "time", "data", "ai"];
+  const [tab, setTab] = useState<SettingsTab>("general");
+
+  // Apply deep-link tab once (e.g. navigated from "Open Settings → AI Advisor")
+  useEffect(() => {
+    if (settingsDeepLinkTab && VALID_SETTINGS_TABS.includes(settingsDeepLinkTab as SettingsTab)) {
+      setTab(settingsDeepLinkTab as SettingsTab);
+      setSettingsDeepLinkTab(null);
+    }
+  }, [settingsDeepLinkTab, setSettingsDeepLinkTab]);
 
   // Ring editing
   const [editRingId, setEditRingId] = useState<string | null>(null);
@@ -492,7 +504,7 @@ export default function SettingsView() {
             <div style={{ fontSize: "0.78rem", color: C.amber, display: "flex", alignItems: "center", gap: 6 }}>
               <span>🔒</span>
               <span>
-                Your API key is stored <strong>only in your browser&apos;s local storage</strong> and is sent directly to the AI provider you configure. It is never transmitted to any other server.
+                Your API key is stored <strong>only in your browser&apos;s local storage</strong> and is sent directly to the AI provider you configure. It is never transmitted to any other server. <strong>Note: it will be included in dashboard exports — do not share export files.</strong>
               </span>
             </div>
           </Card>

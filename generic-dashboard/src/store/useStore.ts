@@ -88,6 +88,9 @@ interface StoreState {
   // AI Advisor
   aiConversations: AiConversation[];
   activeConversationId: string | null;
+
+  // Settings deep-link (cleared after first read; not meaningful to persist)
+  settingsDeepLinkTab: string | null;
 }
 
 // ─── Actions shape ────────────────────────────────────────────────────────────
@@ -215,8 +218,10 @@ interface StoreActions {
   createAiConversation: (title?: string) => string;
   appendAiMessage: (conversationId: string, message: AiMessage) => void;
   updateLastAiMessage: (conversationId: string, content: string) => void;
+  removeLastAiMessage: (conversationId: string) => void;
   removeAiConversation: (id: string) => void;
   setActiveConversationId: (id: string | null) => void;
+  setSettingsDeepLinkTab: (tab: string | null) => void;
 
   // Settings
   importState: (data: Partial<StoreState>) => void;
@@ -263,6 +268,7 @@ const initialState: StoreState = {
   retroWeekOffset: -1,
   aiConversations: [],
   activeConversationId: null,
+  settingsDeepLinkTab: null,
 };
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -675,7 +681,16 @@ export const useStore = create<StoreState & StoreActions>()(
           activeConversationId:
             s.activeConversationId === id ? null : s.activeConversationId,
         })),
+      removeLastAiMessage: (conversationId) =>
+        set((s) => ({
+          aiConversations: s.aiConversations.map((c) =>
+            c.id === conversationId
+              ? { ...c, messages: c.messages.slice(0, -1) }
+              : c
+          ),
+        })),
       setActiveConversationId: (id) => set({ activeConversationId: id }),
+      setSettingsDeepLinkTab: (tab) => set({ settingsDeepLinkTab: tab }),
 
       // ── Settings ──────────────────────────────────────────────────────────────
       importState: (data) =>
@@ -688,7 +703,7 @@ export const useStore = create<StoreState & StoreActions>()(
             "principles", "riskPatterns", "collabChecklist", "phaseBudgets",
             "strategyStartDate", "strategyEstimatedEndDate",
             "scheduleSlots", "defaultSlotDurationMin", "weeklyRetros",
-            "aiConversations",
+            "aiConversations", "activeConversationId",
           ];
           const VALID_VIEW_IDS: ViewId[] = [
             "dashboard", "pipeline", "projects", "kpis", "quarter", "phases",
