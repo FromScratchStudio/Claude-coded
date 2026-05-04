@@ -626,10 +626,10 @@ function AiAdvisorSettingsTab({
   flashSave: () => void;
 }) {
   const selectedProvider = (appConfig.aiProvider ?? "openai") as AiProviderId;
-  const providerDef = AI_PROVIDERS.find((p) => p.id === selectedProvider)!;
+  const providerDef = AI_PROVIDERS.find((p) => p.id === selectedProvider) ?? AI_PROVIDERS[0];
   const providerConfig: AiProviderConfig = {
     apiKey: "",
-    model: providerDef?.defaultModel ?? "",
+    model: providerDef.defaultModel,
     ...(appConfig.aiProviders?.[selectedProvider] ?? {}),
   };
 
@@ -739,11 +739,11 @@ function AiAdvisorSettingsTab({
         <div style={formRow}>
           <label style={labelStyle}>Base URL</label>
           <input
-            value={providerConfig.baseUrl ?? ""}
+            value={showBaseUrl ? (providerConfig.baseUrl ?? "") : (providerDef.baseUrl)}
             onChange={(e) => setProviderField("baseUrl", e.target.value)}
             onBlur={flashSave}
             style={{ ...inputStyle, color: showBaseUrl ? undefined : C.textDim }}
-            placeholder={providerDef?.baseUrl ?? "https://…"}
+            placeholder={providerDef.baseUrl ?? "https://…"}
             readOnly={!showBaseUrl}
           />
           {!showBaseUrl && (
