@@ -718,6 +718,22 @@ export const useStore = create<StoreState & StoreActions>()(
     {
       name: "generic-dashboard-v1",
       storage: createJSONStorage(() => localStorage),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<StoreState>;
+        // Deep-merge appConfig.modules so newly added module flags (e.g. aiAdvisor)
+        // always default to `true` for users with an existing localStorage state.
+        if (persisted.appConfig) {
+          persisted.appConfig = {
+            ...currentState.appConfig,
+            ...persisted.appConfig,
+            modules: {
+              ...currentState.appConfig.modules,
+              ...persisted.appConfig.modules,
+            },
+          };
+        }
+        return { ...currentState, ...persisted };
+      },
     }
   )
 );
