@@ -17,6 +17,7 @@ const ALL_NAV: { id: ViewId; label: string; icon: string; module?: string }[] = 
   { id: "retrospective", label: "Retro", icon: "↺", module: "retrospective" },
   { id: "settings", label: "Settings", icon: "⚙" },
   { id: "user-guide", label: "Guide", icon: "?" },
+  { id: "ai-advisor", label: "AI Advisor", icon: "✦", module: "aiAdvisor" },
 ];
 
 export default function TopBar() {
