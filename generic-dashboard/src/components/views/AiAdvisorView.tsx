@@ -5,15 +5,31 @@ import { SectionTitle } from "../ui/SectionTitle";
 import { buildContextSnapshot, streamAiResponse } from "../../services/aiService";
 import type { AiMessage } from "../../types";
 
-// ─── Simple markdown renderer ─────────────────────────────────────────────────
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
 
 function renderMarkdown(text: string): string {
-  return text
-    // Code blocks
-    .replace(/```[\s\S]*?```/g, (match) => {
-      const code = match.slice(3, -3).replace(/^\w+\n/, "");
-      return `<pre style="background:#06080c;border:1px solid #1f2535;border-radius:6px;padding:0.75rem;overflow-x:auto;font-family:monospace;font-size:0.82rem;margin:0.5rem 0">${escapeHtml(code)}</pre>`;
-    })
+  // First pass: extract and protect code blocks to avoid escaping their contents
+  const codeBlocks: string[] = [];
+  let processed = text.replace(/```[\s\S]*?```/g, (match) => {
+    const inner = match.slice(3, -3).replace(/^[^\n]*\n/, "");
+    const placeholder = `\x00CODEBLOCK${codeBlocks.length}\x00`;
+    codeBlocks.push(
+      `<pre style="background:#06080c;border:1px solid #1f2535;border-radius:6px;padding:0.75rem;overflow-x:auto;font-family:monospace;font-size:0.82rem;margin:0.5rem 0">${escapeHtml(inner)}</pre>`
+    );
+    return placeholder;
+  });
+
+  // Escape all remaining HTML in the text
+  processed = escapeHtml(processed);
+
+  return processed
+    // Restore code blocks (already escaped inside)
+    .replace(/\x00CODEBLOCK(\d+)\x00/g, (_m, i) => codeBlocks[Number(i)])
     // Inline code
     .replace(/`([^`]+)`/g, (_m, code) =>
       `<code style="background:#06080c;border:1px solid #1f2535;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:0.85em">${escapeHtml(code)}</code>`
@@ -33,13 +49,6 @@ function renderMarkdown(text: string): string {
     // Line breaks
     .replace(/\n\n/g, "<br/><br/>")
     .replace(/\n/g, "<br/>");
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
 }
 
 // ─── Suggested prompts ────────────────────────────────────────────────────────

@@ -118,8 +118,9 @@ export function buildContextSnapshot(s: SnapshotState): string {
     lines.push("## KPIs");
     for (const def of s.kpiDefs.slice(0, 8)) {
       const current = s.kpiValues[def.key] ?? 0;
-      const pct = def.target3m > 0 ? Math.round((current / def.target3m) * 100) : "—";
-      lines.push(`  - ${def.label}: ${current}${def.unit} (3m target: ${def.target3m}${def.unit}, at ${pct}%)`);
+      const pct = def.target3m > 0 ? Math.round((current / def.target3m) * 100) : null;
+      const pctStr = pct !== null ? `${pct}%` : "—";
+      lines.push(`  - ${def.label}: ${current}${def.unit} (3m target: ${def.target3m}${def.unit}, at ${pctStr})`);
     }
     lines.push("");
   }
