@@ -26,6 +26,7 @@ export interface ModuleFlags {
   contentHub: boolean;
   weeklyCalendar: boolean;
   retrospective: boolean;
+  aiAdvisor: boolean;
 }
 
 export interface AppConfig {
@@ -73,6 +74,12 @@ export interface AppConfig {
   quarterGoalLabel: string;
   quarterThemeLabel: string;
 
+  // AI Advisor
+  aiApiKey: string;
+  aiBaseUrl: string;
+  aiModel: string;
+  aiSystemPrompt: string;
+
   // Module flags
   modules: ModuleFlags;
 }
@@ -93,7 +100,8 @@ export type ViewId =
   | "weekly-calendar"
   | "retrospective"
   | "settings"
-  | "user-guide";
+  | "user-guide"
+  | "ai-advisor";
 
 // ─── Roadmap ──────────────────────────────────────────────────────────────────
 
@@ -347,4 +355,19 @@ export interface ScheduleSlot {
   workModeId: string | null;
   projectId: string | null;
   note: string;
+}
+
+// ─── AI Advisor ───────────────────────────────────────────────────────────────
+
+export interface AiMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+  ts: number;
+}
+
+export interface AiConversation {
+  id: string;
+  title: string;
+  messages: AiMessage[];
+  createdAt: string;
 }

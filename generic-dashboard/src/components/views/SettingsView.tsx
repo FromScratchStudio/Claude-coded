@@ -28,7 +28,7 @@ export default function SettingsView() {
   const [importError, setImportError] = useState("");
 
   // Tab
-  const [tab, setTab] = useState<"general" | "rings" | "categories" | "modules" | "time" | "data">("general");
+  const [tab, setTab] = useState<"general" | "rings" | "categories" | "modules" | "time" | "data" | "ai">("general");
 
   // Ring editing
   const [editRingId, setEditRingId] = useState<string | null>(null);
@@ -152,6 +152,7 @@ export default function SettingsView() {
     { id: "categories", label: "Categories" },
     { id: "modules", label: "Modules" },
     { id: "time", label: "Time units" },
+    { id: "ai", label: "AI Advisor" },
     { id: "data", label: "Data" },
   ] as const;
 
@@ -378,6 +379,7 @@ export default function SettingsView() {
                 ["contentHub", "Content hub"],
                 ["weeklyCalendar", "Weekly calendar"],
                 ["retrospective", "Retrospective"],
+                ["aiAdvisor", "AI Advisor"],
               ] as Array<[keyof typeof appConfig.modules, string]>
             ).map(([key, label]) => {
               const enabled = appConfig.modules[key];
@@ -481,6 +483,82 @@ export default function SettingsView() {
             </div>
           </div>
         </Card>
+      )}
+
+      {/* AI Advisor */}
+      {tab === "ai" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: 600 }}>
+          <Card style={{ background: `${C.amber}08`, border: `1px solid ${C.amber}30` }}>
+            <div style={{ fontSize: "0.78rem", color: C.amber, display: "flex", alignItems: "center", gap: 6 }}>
+              <span>🔒</span>
+              <span>
+                Your API key is stored <strong>only in your browser&apos;s local storage</strong> and is sent directly to the AI provider you configure. It is never transmitted to any other server.
+              </span>
+            </div>
+          </Card>
+
+          <Card>
+            <div style={formRow}>
+              <label style={labelStyle}>API Key</label>
+              <input
+                type="password"
+                value={appConfig.aiApiKey ?? ""}
+                onChange={(e) => updateAppConfig({ aiApiKey: e.target.value })}
+                onBlur={flashSave}
+                style={inputStyle}
+                placeholder="sk-…"
+                autoComplete="off"
+              />
+            </div>
+
+            <div style={formRow}>
+              <label style={labelStyle}>Base URL</label>
+              <input
+                value={appConfig.aiBaseUrl ?? "https://api.openai.com/v1"}
+                onChange={(e) => updateAppConfig({ aiBaseUrl: e.target.value })}
+                onBlur={flashSave}
+                style={inputStyle}
+                placeholder="https://api.openai.com/v1"
+              />
+              <div style={{ fontSize: "0.72rem", color: C.textDim, marginTop: 4 }}>
+                OpenAI: https://api.openai.com/v1 · Ollama: http://localhost:11434/v1
+              </div>
+            </div>
+
+            <div style={formRow}>
+              <label style={labelStyle}>Model</label>
+              <input
+                value={appConfig.aiModel ?? "gpt-4o-mini"}
+                onChange={(e) => updateAppConfig({ aiModel: e.target.value })}
+                onBlur={flashSave}
+                style={inputStyle}
+                placeholder="gpt-4o-mini"
+              />
+              <div style={{ fontSize: "0.72rem", color: C.textDim, marginTop: 4 }}>
+                e.g. gpt-4o-mini · gpt-4o · claude-3-5-sonnet-20241022 · llama3.2
+              </div>
+            </div>
+
+            <div style={formRow}>
+              <label style={labelStyle}>System prompt</label>
+              <textarea
+                value={appConfig.aiSystemPrompt ?? ""}
+                onChange={(e) => updateAppConfig({ aiSystemPrompt: e.target.value })}
+                onBlur={flashSave}
+                style={{
+                  ...inputStyle,
+                  minHeight: 100,
+                  resize: "vertical",
+                  lineHeight: 1.5,
+                }}
+                placeholder="You are a strategic advisor embedded in a project management dashboard…"
+              />
+              <div style={{ fontSize: "0.72rem", color: C.textDim, marginTop: 4 }}>
+                This prompt prefixes every conversation. The current dashboard snapshot is appended automatically when enabled.
+              </div>
+            </div>
+          </Card>
+        </div>
       )}
 
       {/* Data */}

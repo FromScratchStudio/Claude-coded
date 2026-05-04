@@ -20,6 +20,7 @@ const WeeklyCalendarView = lazy(() => import("./components/views/WeeklyCalendarV
 const RetrospectiveView = lazy(() => import("./components/views/RetrospectiveView"));
 const SettingsView = lazy(() => import("./components/views/SettingsView"));
 const UserGuideView = lazy(() => import("./components/views/UserGuideView"));
+const AiAdvisorView = lazy(() => import("./components/views/AiAdvisorView"));
 
 const PAGE_VARIANTS = {
   initial: { opacity: 0, y: 8 },
@@ -107,6 +108,7 @@ export default function App() {
               {activeView === "retrospective" && <RetrospectiveView />}
               {activeView === "settings" && <SettingsView />}
               {activeView === "user-guide" && <UserGuideView />}
+              {activeView === "ai-advisor" && <AiAdvisorView />}
             </Suspense>
           </motion.div>
         </AnimatePresence>

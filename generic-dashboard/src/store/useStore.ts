@@ -5,6 +5,7 @@ import type {
   ContentSeries, ContentEntry, KpiDef, Persona,
   Phase, WorkflowStage, OperationalMode, Principle, RiskPattern,
   CollabCheck, PhaseBudget, ScheduleSlot, WeeklyRetro,
+  AiMessage, AiConversation,
 } from "../types";
 import { DEFAULT_CONFIG } from "../config/defaults";
 import { PROJECTS_INIT } from "../data/projects";
@@ -83,6 +84,10 @@ interface StoreState {
   // Weekly retrospectives
   weeklyRetros: WeeklyRetro[];
   retroWeekOffset: number;
+
+  // AI Advisor
+  aiConversations: AiConversation[];
+  activeConversationId: string | null;
 }
 
 // ─── Actions shape ────────────────────────────────────────────────────────────
@@ -206,6 +211,13 @@ interface StoreActions {
   upsertWeeklyRetro: (retro: Omit<WeeklyRetro, "id" | "createdAt" | "updatedAt">) => void;
   removeWeeklyRetro: (weekKey: string) => void;
 
+  // AI Advisor
+  createAiConversation: (title?: string) => string;
+  appendAiMessage: (conversationId: string, message: AiMessage) => void;
+  updateLastAiMessage: (conversationId: string, content: string) => void;
+  removeAiConversation: (id: string) => void;
+  setActiveConversationId: (id: string | null) => void;
+
   // Settings
   importState: (data: Partial<StoreState>) => void;
   resetToDefaults: () => void;
@@ -249,6 +261,8 @@ const initialState: StoreState = {
   defaultSlotDurationMin: 90,
   weeklyRetros: [],
   retroWeekOffset: -1,
+  aiConversations: [],
+  activeConversationId: null,
 };
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -620,6 +634,49 @@ export const useStore = create<StoreState & StoreActions>()(
           weeklyRetros: s.weeklyRetros.filter((r) => r.weekKey !== weekKey),
         })),
 
+      // ── AI Advisor ────────────────────────────────────────────────────────────
+      createAiConversation: (title) => {
+        const id = genId();
+        const now = new Date().toISOString();
+        const conv: AiConversation = {
+          id,
+          title: title ?? `Conversation ${new Date().toLocaleString()}`,
+          messages: [],
+          createdAt: now,
+        };
+        set((s) => ({
+          aiConversations: [conv, ...s.aiConversations],
+          activeConversationId: id,
+        }));
+        return id;
+      },
+      appendAiMessage: (conversationId, message) =>
+        set((s) => ({
+          aiConversations: s.aiConversations.map((c) =>
+            c.id === conversationId
+              ? { ...c, messages: [...c.messages, message] }
+              : c
+          ),
+        })),
+      updateLastAiMessage: (conversationId, content) =>
+        set((s) => ({
+          aiConversations: s.aiConversations.map((c) => {
+            if (c.id !== conversationId) return c;
+            const messages = [...c.messages];
+            const last = messages[messages.length - 1];
+            if (!last || last.role !== "assistant") return c;
+            messages[messages.length - 1] = { ...last, content };
+            return { ...c, messages };
+          }),
+        })),
+      removeAiConversation: (id) =>
+        set((s) => ({
+          aiConversations: s.aiConversations.filter((c) => c.id !== id),
+          activeConversationId:
+            s.activeConversationId === id ? null : s.activeConversationId,
+        })),
+      setActiveConversationId: (id) => set({ activeConversationId: id }),
+
       // ── Settings ──────────────────────────────────────────────────────────────
       importState: (data) =>
         set((s) => {
@@ -631,11 +688,13 @@ export const useStore = create<StoreState & StoreActions>()(
             "principles", "riskPatterns", "collabChecklist", "phaseBudgets",
             "strategyStartDate", "strategyEstimatedEndDate",
             "scheduleSlots", "defaultSlotDurationMin", "weeklyRetros",
+            "aiConversations",
           ];
           const VALID_VIEW_IDS: ViewId[] = [
             "dashboard", "pipeline", "projects", "kpis", "quarter", "phases",
             "guardrails", "personas", "ideas", "content-hub",
             "weekly-calendar", "retrospective", "settings", "user-guide",
+            "ai-advisor",
           ];
           const safe: Partial<StoreState> = {};
           for (const key of ALLOWED_KEYS) {

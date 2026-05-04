@@ -69,6 +69,11 @@ export const DEFAULT_CONFIG: AppConfig = {
   quarterGoalLabel: "Quarter Goal",
   quarterThemeLabel: "Narrative Theme",
 
+  aiApiKey: "",
+  aiBaseUrl: "https://api.openai.com/v1",
+  aiModel: "gpt-4o-mini",
+  aiSystemPrompt: "You are a strategic advisor embedded in a project management dashboard. Analyze the user's data and provide concise, actionable advice about their projects, pipeline, and goals.",
+
   modules: {
     pipeline: true,
     projects: true,
@@ -81,5 +86,6 @@ export const DEFAULT_CONFIG: AppConfig = {
     contentHub: true,
     weeklyCalendar: true,
     retrospective: true,
+    aiAdvisor: true,
   },
 };
