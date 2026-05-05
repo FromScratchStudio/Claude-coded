@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useStore } from "../../store/useStore";
 import { C } from "../../theme";
-import { inputStyle, labelStyle, formRow, btnPrimary, btnSecondary, btnDanger } from "./Modal";
+import { inputStyle, labelStyle, formRow, btnPrimary, btnSecondary } from "./Modal";
 import type { DriveDocRef, DriveDocType } from "../../types";
 
 const DOC_TYPE_ICONS: Record<DriveDocType, string> = {
@@ -298,14 +298,6 @@ export function DriveRefBadges({ refs, onManage }: DriveRefBadgesProps) {
     >
       <span>🗂</span>
       {refs.length} doc{refs.length > 1 ? "s" : ""}
-    </button>
-  );
-}
-
-export function DriveDeleteButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button onClick={onClick} style={btnDanger}>
-      Delete
     </button>
   );
 }
