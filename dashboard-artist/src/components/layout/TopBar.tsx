@@ -13,6 +13,7 @@ const TABS: { id: ViewId; label: string }[] = [
   { id: "kpis", label: "KPIs" },
   { id: "phases", label: "Phases" },
   { id: "ideas", label: "Idées" },
+  { id: "ia-conseiller", label: "✦ IA" },
   { id: "garde-fous", label: "Garde-fous" },
   { id: "referentiel", label: "Référentiel" },
   { id: "kefta-matesha", label: "Kefta Matesha" },

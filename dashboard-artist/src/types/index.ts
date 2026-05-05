@@ -1,3 +1,32 @@
+// ─── AI Advisor ───────────────────────────────────────────────────────────────
+
+export type AiProviderId = "openai" | "anthropic" | "gemini" | "ollama" | "custom";
+
+export interface AiProviderConfig {
+  apiKey: string;
+  model: string;
+  baseUrl?: string;
+}
+
+export interface AiMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+  ts: number;
+}
+
+export interface AiConversation {
+  id: string;
+  title: string;
+  messages: AiMessage[];
+  createdAt: string;
+}
+
+export interface AiConfig {
+  provider: AiProviderId;
+  providers: Partial<Record<AiProviderId, AiProviderConfig>>;
+  systemPrompt: string;
+}
+
 // ─── Navigation ───────────────────────────────────────────────────────────────
 
 export type ViewId =
@@ -13,6 +42,7 @@ export type ViewId =
   | "kefta-matesha"
   | "weekly-calendar"
   | "retrospective"
+  | "ia-conseiller"
   | "settings"
   | "user-guide";
 

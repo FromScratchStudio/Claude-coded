@@ -3,6 +3,8 @@ import { C, FONT } from "../../theme";
 import { useStore } from "../../store/useStore";
 import Card from "../ui/Card";
 import SectionTitle from "../ui/SectionTitle";
+import { AI_PROVIDERS } from "../../services/aiService";
+import type { AiProviderId, AiProviderConfig } from "../../types";
 
 function formatBytes(n: number) {
   if (n < 1024) return `${n} B`;
@@ -13,6 +15,8 @@ function formatBytes(n: number) {
 export default function SettingsView() {
   const store = useStore();
   const importState = useStore((s) => s.importState);
+  const aiConfig = useStore((s) => s.aiConfig);
+  const updateAiConfig = useStore((s) => s.updateAiConfig);
   const fileRef = useRef<HTMLInputElement>(null);
   const [importStatus, setImportStatus] = useState<"idle" | "success" | "error">("idle");
   const [importMsg, setImportMsg] = useState("");
@@ -171,6 +175,9 @@ export default function SettingsView() {
           )}
         </Card>
 
+        {/* ── AI Conseiller config ── */}
+        <AiConseillerSettings aiConfig={aiConfig} updateAiConfig={updateAiConfig} />
+
         {/* ── Storage info ── */}
         <Card>
           <SectionTitle accent={C.cyan}>Données stockées</SectionTitle>
@@ -212,5 +219,147 @@ export default function SettingsView() {
 
       </div>
     </div>
+  );
+}
+
+// ─── AI Conseiller settings sub-component ────────────────────────────────────
+
+function AiConseillerSettings({
+  aiConfig,
+  updateAiConfig,
+}: {
+  aiConfig: import("../../types").AiConfig;
+  updateAiConfig: (updates: Partial<import("../../types").AiConfig>) => void;
+}) {
+  const selectedProvider = (aiConfig.provider ?? "openai") as AiProviderId;
+  const providerDef = AI_PROVIDERS.find((p) => p.id === selectedProvider) ?? AI_PROVIDERS[0];
+  const providerConfig: AiProviderConfig = {
+    apiKey: "",
+    model: providerDef.defaultModel,
+    ...(aiConfig.providers?.[selectedProvider] ?? {}),
+  };
+
+  function setProviderField(field: keyof AiProviderConfig, value: string) {
+    const updated: AiProviderConfig = { ...providerConfig, [field]: value };
+    updateAiConfig({ providers: { ...aiConfig.providers, [selectedProvider]: updated } });
+  }
+
+  const showBaseUrl = selectedProvider === "custom" || selectedProvider === "ollama";
+  const modelIsCustom = !providerDef?.models.includes(providerConfig.model ?? "") && (providerConfig.model ?? "") !== "";
+
+  return (
+    <Card>
+      <SectionTitle accent={C.violet}>Conseiller IA</SectionTitle>
+      <p style={{ fontSize: "0.72rem", color: C.textDim, margin: "0 0 0.85rem", lineHeight: 1.5 }}>
+        Les clés API sont stockées <strong style={{ color: C.textSoft }}>uniquement dans votre navigateur</strong> et envoyées directement au fournisseur. Elles ne sont jamais transmises ailleurs.
+      </p>
+
+      {/* Provider selection */}
+      <div style={{ marginBottom: "0.75rem" }}>
+        <label style={{ display: "block", fontSize: "0.62rem", color: C.textDim, fontFamily: FONT.mono, marginBottom: "0.3rem", textTransform: "uppercase", letterSpacing: "0.1em" }}>Fournisseur</label>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {AI_PROVIDERS.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => {
+                const existingCfg = aiConfig.providers?.[p.id as AiProviderId] ?? { apiKey: "", model: p.defaultModel };
+                updateAiConfig({
+                  provider: p.id,
+                  providers: { ...aiConfig.providers, [p.id]: existingCfg },
+                });
+              }}
+              style={{
+                background: selectedProvider === p.id ? `${C.violet}20` : C.surfaceAlt,
+                border: `1px solid ${selectedProvider === p.id ? C.violet : C.border}`,
+                color: selectedProvider === p.id ? C.violet : C.textSoft,
+                padding: "0.3rem 0.65rem",
+                borderRadius: 5,
+                cursor: "pointer",
+                fontSize: "0.72rem",
+                fontFamily: FONT.mono,
+              }}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Model selection */}
+      <div style={{ marginBottom: "0.75rem" }}>
+        <label style={{ display: "block", fontSize: "0.62rem", color: C.textDim, fontFamily: FONT.mono, marginBottom: "0.3rem", textTransform: "uppercase", letterSpacing: "0.1em" }}>Modèle</label>
+        {providerDef?.models.length > 0 && (
+          <select
+            value={modelIsCustom ? "__custom__" : (providerConfig.model || providerDef.defaultModel)}
+            onChange={(e) => {
+              if (e.target.value !== "__custom__") setProviderField("model", e.target.value);
+            }}
+            style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, borderRadius: 5, padding: "0.35rem 0.5rem", fontSize: "0.78rem", width: "100%", marginBottom: "0.35rem" }}
+          >
+            {providerDef.models.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+            <option value="__custom__">Personnalisé…</option>
+          </select>
+        )}
+        <input
+          type="text"
+          value={providerConfig.model ?? ""}
+          onChange={(e) => setProviderField("model", e.target.value)}
+          placeholder={providerDef?.defaultModel || "nom-du-modèle"}
+          style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, borderRadius: 5, padding: "0.35rem 0.5rem", fontSize: "0.75rem", width: "100%", boxSizing: "border-box" }}
+        />
+      </div>
+
+      {/* API key */}
+      {providerDef?.requiresApiKey && (
+        <div style={{ marginBottom: "0.75rem" }}>
+          <label style={{ display: "block", fontSize: "0.62rem", color: C.textDim, fontFamily: FONT.mono, marginBottom: "0.3rem", textTransform: "uppercase", letterSpacing: "0.1em" }}>Clé API</label>
+          <input
+            type="password"
+            value={providerConfig.apiKey ?? ""}
+            onChange={(e) => setProviderField("apiKey", e.target.value)}
+            placeholder={selectedProvider === "anthropic" ? "sk-ant-…" : selectedProvider === "gemini" ? "AIza…" : "sk-…"}
+            style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, borderRadius: 5, padding: "0.35rem 0.5rem", fontSize: "0.75rem", width: "100%", boxSizing: "border-box", fontFamily: FONT.mono }}
+          />
+        </div>
+      )}
+
+      {/* Base URL */}
+      {showBaseUrl && (
+        <div style={{ marginBottom: "0.75rem" }}>
+          <label style={{ display: "block", fontSize: "0.62rem", color: C.textDim, fontFamily: FONT.mono, marginBottom: "0.3rem", textTransform: "uppercase", letterSpacing: "0.1em" }}>URL de base</label>
+          <input
+            type="text"
+            value={providerConfig.baseUrl ?? providerDef.baseUrl}
+            onChange={(e) => setProviderField("baseUrl", e.target.value)}
+            placeholder={providerDef.baseUrl ?? "https://…"}
+            style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, borderRadius: 5, padding: "0.35rem 0.5rem", fontSize: "0.75rem", width: "100%", boxSizing: "border-box", fontFamily: FONT.mono }}
+          />
+          {providerDef?.baseUrl && (
+            <div style={{ fontSize: "0.6rem", color: C.textVeryDim, marginTop: "0.2rem" }}>
+              Défaut : {providerDef.baseUrl}
+            </div>
+          )}
+          {selectedProvider === "custom" && (
+            <div style={{ fontSize: "0.6rem", color: C.textDim, marginTop: "0.2rem" }}>
+              Tout endpoint compatible OpenAI, ex. https://openrouter.ai/api/v1
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* System prompt */}
+      <div>
+        <label style={{ display: "block", fontSize: "0.62rem", color: C.textDim, fontFamily: FONT.mono, marginBottom: "0.3rem", textTransform: "uppercase", letterSpacing: "0.1em" }}>Prompt système</label>
+        <textarea
+          value={aiConfig.systemPrompt ?? ""}
+          onChange={(e) => updateAiConfig({ systemPrompt: e.target.value })}
+          rows={3}
+          placeholder="Instructions pour le conseiller IA…"
+          style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, borderRadius: 5, padding: "0.4rem 0.5rem", fontSize: "0.75rem", width: "100%", boxSizing: "border-box", resize: "vertical", fontFamily: FONT.body }}
+        />
+      </div>
+    </Card>
   );
 }

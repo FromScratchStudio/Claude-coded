@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import type {
   ViewId, Project, Chapter, Quarter, Idea, KMIssue, KMArticle, KpiDef, Heteronym,
   Phase, WorkflowStage, DegradedMode, Principle, Trap, CollabCheck, BuildBudget,
-  ScheduleSlot, WeeklyRetro,
+  ScheduleSlot, WeeklyRetro, AiMessage, AiConversation, AiConfig, AiProviderId,
 } from "../types";
 import { PROJECTS_INIT } from "../data/projects";
 import { CHAPTERS_INIT, WORKFLOW_STAGES } from "../data/workflow";
@@ -76,7 +76,13 @@ interface StoreState {
   /** Durée par défaut d'un créneau en minutes (régime normal). Défaut : 90 (1h30). */
   defaultSlotDurationMin: number;
   // Weekly retrospectives
-  weeklyRetros: WeeklyRetro[];}
+  weeklyRetros: WeeklyRetro[];
+
+  // AI Conseiller
+  aiConfig: AiConfig;
+  aiConversations: AiConversation[];
+  activeConversationId: string | null;
+}
 
 // ─── Actions shape ────────────────────────────────────────────────────────────
 
@@ -184,6 +190,15 @@ interface StoreActions {
   // Weekly retrospectives
   upsertWeeklyRetro: (retro: Omit<WeeklyRetro, "id" | "createdAt" | "updatedAt">) => void;
   removeWeeklyRetro: (weekKey: string) => void;
+
+  // AI Conseiller
+  updateAiConfig: (updates: Partial<AiConfig>) => void;
+  createAiConversation: (title?: string) => string;
+  appendAiMessage: (conversationId: string, message: AiMessage) => void;
+  updateLastAiMessage: (conversationId: string, content: string) => void;
+  removeLastAiMessage: (conversationId: string) => void;
+  removeAiConversation: (id: string) => void;
+  setActiveConversationId: (id: string | null) => void;
 }
 
 // ─── Initial state ────────────────────────────────────────────────────────────
@@ -219,6 +234,13 @@ const initialState: StoreState = {
   scheduleSlots: [],
   defaultSlotDurationMin: 90,
   weeklyRetros: [],
+  aiConfig: {
+    provider: "openai" as AiProviderId,
+    providers: {},
+    systemPrompt: "Tu es un conseiller stratégique pour un artiste indépendant utilisant la méthode STRATEX. Tu as accès aux données du tableau de bord et fournis des conseils concrets, actionnables et adaptés au contexte artistique et créatif.",
+  },
+  aiConversations: [],
+  activeConversationId: null,
 };
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -563,6 +585,61 @@ export const useStore = create<StoreState & StoreActions>()(
 
       removeWeeklyRetro: (weekKey) =>
         set((s) => ({ weeklyRetros: s.weeklyRetros.filter((r) => r.weekKey !== weekKey) })),
+
+      // ── AI Conseiller ────────────────────────────────────────────────────────
+      updateAiConfig: (updates) =>
+        set((s) => ({ aiConfig: { ...s.aiConfig, ...updates } })),
+
+      createAiConversation: (title) => {
+        const id = genId();
+        const now = new Date().toISOString();
+        const conv: AiConversation = {
+          id,
+          title: title || "Nouvelle conversation",
+          messages: [],
+          createdAt: now,
+        };
+        set((s) => ({
+          aiConversations: [conv, ...s.aiConversations],
+          activeConversationId: id,
+        }));
+        return id;
+      },
+      appendAiMessage: (conversationId, message) =>
+        set((s) => ({
+          aiConversations: s.aiConversations.map((c) =>
+            c.id === conversationId
+              ? { ...c, messages: [...c.messages, message] }
+              : c
+          ),
+        })),
+      updateLastAiMessage: (conversationId, content) =>
+        set((s) => ({
+          aiConversations: s.aiConversations.map((c) => {
+            if (c.id !== conversationId) return c;
+            const messages = [...c.messages];
+            const last = messages[messages.length - 1];
+            if (!last || last.role !== "assistant") return c;
+            messages[messages.length - 1] = { ...last, content };
+            return { ...c, messages };
+          }),
+        })),
+      removeLastAiMessage: (conversationId) =>
+        set((s) => ({
+          aiConversations: s.aiConversations.map((c) =>
+            c.id === conversationId
+              ? { ...c, messages: c.messages.slice(0, -1) }
+              : c
+          ),
+        })),
+      removeAiConversation: (id) =>
+        set((s) => ({
+          aiConversations: s.aiConversations.filter((c) => c.id !== id),
+          activeConversationId:
+            s.activeConversationId === id ? null : s.activeConversationId,
+        })),
+      setActiveConversationId: (id) => set({ activeConversationId: id }),
+
       // ── Settings ──────────────────────────────────────────────────────────────
       importState: (data) =>
         set((s) => {
@@ -574,12 +651,12 @@ export const useStore = create<StoreState & StoreActions>()(
             "collabChecklist", "buildBudgets",
             "strategyStartDate", "strategyEstimatedEndDate",
             "scheduleSlots", "defaultSlotDurationMin",
-            "weeklyRetros",
+            "weeklyRetros", "aiConfig", "aiConversations", "activeConversationId",
           ];
           const VALID_VIEW_IDS: ViewId[] = [
             "dashboard", "pipeline", "projects", "kpis", "trimestre", "phases",
             "garde-fous", "referentiel", "ideas", "kefta-matesha",
-            "weekly-calendar", "retrospective", "settings", "user-guide",
+            "weekly-calendar", "retrospective", "ia-conseiller", "settings", "user-guide",
           ];
           const safe: Partial<StoreState> = {};
           for (const key of ALLOWED_KEYS) {
@@ -634,6 +711,9 @@ export const useStore = create<StoreState & StoreActions>()(
         scheduleSlots: state.scheduleSlots,
         defaultSlotDurationMin: state.defaultSlotDurationMin,
         weeklyRetros: state.weeklyRetros,
+        aiConfig: state.aiConfig,
+        aiConversations: state.aiConversations,
+        activeConversationId: state.activeConversationId,
       }),
     }
   )

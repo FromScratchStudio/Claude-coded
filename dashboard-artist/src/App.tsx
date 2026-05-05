@@ -17,6 +17,7 @@ import SettingsView from "./components/views/SettingsView";
 import UserGuideView from "./components/views/UserGuideView";
 import WeeklyCalendarView from "./components/views/WeeklyCalendarView";
 import WeeklyRetroView from "./components/views/WeeklyRetroView";
+import AiConseillerView from "./components/views/AiConseillerView";
 import type { ViewId } from "./types";
 
 const VIEWS: Record<ViewId, JSX.Element> = {
@@ -32,6 +33,7 @@ const VIEWS: Record<ViewId, JSX.Element> = {
   "kefta-matesha": <KeftaMateshaView />,
   "weekly-calendar": <WeeklyCalendarView />,
   retrospective: <WeeklyRetroView />,
+  "ia-conseiller": <AiConseillerView />,
   settings: <SettingsView />,
   "user-guide": <UserGuideView />,
 };
