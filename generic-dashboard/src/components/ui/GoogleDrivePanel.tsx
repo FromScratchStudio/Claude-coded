@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useStore } from "../../store/useStore";
 import { C } from "../../theme";
 import { inputStyle, labelStyle, formRow, btnPrimary, btnSecondary } from "./Modal";
+import { sanitizeUrl } from "../../services/sanitizeUrl";
 import type { DriveDocRef, DriveDocType } from "../../types";
 
 const DOC_TYPE_ICONS: Record<DriveDocType, string> = {
@@ -53,10 +54,12 @@ export function GoogleDrivePanel({ projectId, driveDocRefs, onClose }: GoogleDri
 
   function handleAdd() {
     if (!refName.trim() || !refUrl.trim()) return;
+    const safeUrl = sanitizeUrl(refUrl);
+    if (!safeUrl) return;
     addDriveDocRef(projectId, {
       id: genRefId(),
       name: refName.trim(),
-      url: refUrl.trim(),
+      url: safeUrl,
       type: refType,
       note: refNote.trim(),
       addedAt: new Date().toISOString(),
@@ -108,31 +111,40 @@ export function GoogleDrivePanel({ projectId, driveDocRefs, onClose }: GoogleDri
         </div>
 
         {/* Folder link */}
-        {googleDriveConfig.folderUrl && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "0.5rem 0.75rem",
-              background: C.surfaceAlt,
-              borderRadius: 6,
-              marginBottom: "1rem",
-              fontSize: "0.78rem",
-            }}
-          >
-            <span>📁</span>
-            <span style={{ color: C.textMuted, flexShrink: 0 }}>Drive folder:</span>
-            <a
-              href={googleDriveConfig.folderUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: C.accent, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+        {googleDriveConfig.folderUrl && (() => {
+          const safeFolder = sanitizeUrl(googleDriveConfig.folderUrl);
+          return (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "0.5rem 0.75rem",
+                background: C.surfaceAlt,
+                borderRadius: 6,
+                marginBottom: "1rem",
+                fontSize: "0.78rem",
+              }}
             >
-              {googleDriveConfig.folderName || googleDriveConfig.folderUrl}
-            </a>
-          </div>
-        )}
+              <span>📁</span>
+              <span style={{ color: C.textMuted, flexShrink: 0 }}>Drive folder:</span>
+              {safeFolder ? (
+                <a
+                  href={safeFolder}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: C.accent, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                >
+                  {googleDriveConfig.folderName || safeFolder}
+                </a>
+              ) : (
+                <span style={{ color: C.textVeryDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {googleDriveConfig.folderName || googleDriveConfig.folderUrl} (invalid URL)
+                </span>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Document list */}
         {driveDocRefs.length > 0 ? (
@@ -152,14 +164,20 @@ export function GoogleDrivePanel({ projectId, driveDocRefs, onClose }: GoogleDri
               >
                 <span style={{ fontSize: "1rem", flexShrink: 0 }}>{DOC_TYPE_ICONS[ref.type]}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <a
-                    href={ref.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: C.text, textDecoration: "none", fontSize: "0.82rem", fontWeight: 500, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                  >
-                    {ref.name}
-                  </a>
+                  {sanitizeUrl(ref.url) ? (
+                    <a
+                      href={sanitizeUrl(ref.url)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: C.text, textDecoration: "none", fontSize: "0.82rem", fontWeight: 500, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                    >
+                      {ref.name}
+                    </a>
+                  ) : (
+                    <span style={{ color: C.textVeryDim, fontSize: "0.82rem", fontWeight: 500, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {ref.name}
+                    </span>
+                  )}
                   <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2 }}>
                     <span style={{ fontSize: "0.68rem", color: C.textDim, background: C.surfaceAlt, padding: "1px 6px", borderRadius: 4 }}>
                       {DOC_TYPE_LABELS[ref.type]}
@@ -205,9 +223,17 @@ export function GoogleDrivePanel({ projectId, driveDocRefs, onClose }: GoogleDri
               <input
                 value={refUrl}
                 onChange={(e) => setRefUrl(e.target.value)}
-                style={inputStyle}
+                style={{
+                  ...inputStyle,
+                  borderColor: refUrl && !sanitizeUrl(refUrl) ? "#ef4444" : undefined,
+                }}
                 placeholder="https://docs.google.com/..."
               />
+              {refUrl && !sanitizeUrl(refUrl) && (
+                <span style={{ fontSize: "0.7rem", color: "#ef4444", marginTop: 2, display: "block" }}>
+                  URL must start with https:// or http://
+                </span>
+              )}
             </div>
             <div style={formRow}>
               <label style={labelStyle}>Type</label>
@@ -232,7 +258,7 @@ export function GoogleDrivePanel({ projectId, driveDocRefs, onClose }: GoogleDri
             </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: "0.5rem" }}>
               <button onClick={resetForm} style={btnSecondary}>Cancel</button>
-              <button onClick={handleAdd} style={btnPrimary} disabled={!refName.trim() || !refUrl.trim()}>
+              <button onClick={handleAdd} style={btnPrimary} disabled={!refName.trim() || !sanitizeUrl(refUrl)}>
                 Add
               </button>
             </div>

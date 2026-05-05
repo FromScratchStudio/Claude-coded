@@ -5,6 +5,7 @@ import { useBreakpoint } from "../../hooks/useBreakpoint";
 import { SectionTitle } from "../ui/SectionTitle";
 import { Card } from "../ui/Card";
 import { btnPrimary, btnSecondary, btnDanger, inputStyle, labelStyle, formRow } from "../ui/Modal";
+import { sanitizeUrl } from "../../services/sanitizeUrl";
 import type { RingConfig, AllocationCategory, AiProviderId, AiProviderConfig, AppConfig } from "../../types";
 import { AI_PROVIDERS } from "../../services/aiService";
 
@@ -562,26 +563,32 @@ export default function SettingsView() {
           </div>
           {googleDriveConfig.folderUrl && (
             <div style={{ marginTop: "0.5rem" }}>
-              <a
-                href={googleDriveConfig.folderUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "0.4rem 0.9rem",
-                  background: C.surfaceAlt,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 6,
-                  color: C.accent,
-                  textDecoration: "none",
-                  fontSize: "0.8rem",
-                }}
-              >
-                <span>📁</span>
-                Open Drive folder
-              </a>
+              {sanitizeUrl(googleDriveConfig.folderUrl) ? (
+                <a
+                  href={sanitizeUrl(googleDriveConfig.folderUrl)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "0.4rem 0.9rem",
+                    background: C.surfaceAlt,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 6,
+                    color: C.accent,
+                    textDecoration: "none",
+                    fontSize: "0.8rem",
+                  }}
+                >
+                  <span>📁</span>
+                  Open Drive folder
+                </a>
+              ) : (
+                <span style={{ fontSize: "0.78rem", color: "#ef4444" }}>
+                  Invalid URL — must start with https:// or http://
+                </span>
+              )}
             </div>
           )}
           <div
