@@ -69,7 +69,8 @@ export const AI_PROVIDERS: AiProviderDef[] = [
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface AiConfig {
+/** Configuration passed directly to the streaming functions. */
+export interface AiStreamConfig {
   provider: AiProviderId;
   apiKey: string;
   baseUrl: string;
@@ -250,10 +251,10 @@ export function escapeHtml(str: string): string {
 export function renderMarkdown(text: string, headingColor: string): string {
   const codeBlocks: string[] = [];
   let processed = text.replace(/```[\s\S]*?```/g, (match) => {
-    const inner = match.slice(3, -3).replace(/^[^\n]*\n/, "");
+    const codeContent = match.slice(3, -3).replace(/^[^\n]*\n/, "");
     const placeholder = `\x00CODEBLOCK${codeBlocks.length}\x00`;
     codeBlocks.push(
-      `<pre style="background:#06080c;border:1px solid #1f2535;border-radius:6px;padding:0.75rem;overflow-x:auto;font-family:monospace;font-size:0.82rem;margin:0.5rem 0">${escapeHtml(inner)}</pre>`
+      `<pre style="background:#06080c;border:1px solid #1f2535;border-radius:6px;padding:0.75rem;overflow-x:auto;font-family:monospace;font-size:0.82rem;margin:0.5rem 0">${escapeHtml(codeContent)}</pre>`
     );
     return placeholder;
   });
@@ -280,7 +281,7 @@ export function renderMarkdown(text: string, headingColor: string): string {
 
 export async function* streamAiResponse(
   messages: AiMessage[],
-  config: AiConfig,
+  config: AiStreamConfig,
   signal?: AbortSignal
 ): AsyncGenerator<string> {
   const providerDef = AI_PROVIDERS.find((p) => p.id === config.provider);
@@ -299,7 +300,7 @@ export async function* streamAiResponse(
 
 async function* streamOpenAiCompat(
   messages: AiMessage[],
-  config: AiConfig,
+  config: AiStreamConfig,
   signal?: AbortSignal
 ): AsyncGenerator<string> {
   const baseUrl = config.baseUrl.replace(/\/$/, "");
@@ -344,7 +345,7 @@ async function* streamOpenAiCompat(
 
 async function* streamAnthropic(
   messages: AiMessage[],
-  config: AiConfig,
+  config: AiStreamConfig,
   signal?: AbortSignal
 ): AsyncGenerator<string> {
   const baseUrl = config.baseUrl.replace(/\/$/, "");
@@ -391,7 +392,7 @@ async function* streamAnthropic(
 
 async function* streamGemini(
   messages: AiMessage[],
-  config: AiConfig,
+  config: AiStreamConfig,
   signal?: AbortSignal
 ): AsyncGenerator<string> {
   const baseUrl = config.baseUrl.replace(/\/$/, "");

@@ -245,7 +245,8 @@ function AiConseillerSettings({
   }
 
   const showBaseUrl = selectedProvider === "custom" || selectedProvider === "ollama";
-  const modelIsCustom = !providerDef?.models.includes(providerConfig.model ?? "") && (providerConfig.model ?? "") !== "";
+  const currentModel = providerConfig.model ?? "";
+  const modelIsCustom = !providerDef?.models.includes(currentModel) && currentModel !== "";
 
   return (
     <Card>
