@@ -4,6 +4,7 @@ import { useStore } from "../../store/useStore";
 import Card from "../ui/Card";
 import SectionTitle from "../ui/SectionTitle";
 import { AI_PROVIDERS } from "../../services/aiService";
+import { sanitizeUrl } from "../../services/sanitizeUrl";
 import type { AiProviderId, AiProviderConfig } from "../../types";
 
 function formatBytes(n: number) {
@@ -17,6 +18,8 @@ export default function SettingsView() {
   const importState = useStore((s) => s.importState);
   const aiConfig = useStore((s) => s.aiConfig);
   const updateAiConfig = useStore((s) => s.updateAiConfig);
+  const googleDriveConfig = useStore((s) => s.googleDriveConfig);
+  const setGoogleDriveConfig = useStore((s) => s.setGoogleDriveConfig);
   const fileRef = useRef<HTMLInputElement>(null);
   const [importStatus, setImportStatus] = useState<"idle" | "success" | "error">("idle");
   const [importMsg, setImportMsg] = useState("");
@@ -177,6 +180,108 @@ export default function SettingsView() {
 
         {/* ── AI Conseiller config ── */}
         <AiConseillerSettings aiConfig={aiConfig} updateAiConfig={updateAiConfig} />
+
+        {/* ── Google Drive ── */}
+        <Card>
+          <SectionTitle accent={C.gold}>🗂 Google Drive</SectionTitle>
+          <p style={{ fontSize: "0.72rem", color: C.textMuted, margin: "0 0 0.85rem", lineHeight: 1.6 }}>
+            Associez un dossier Google Drive et référencez des documents directement depuis vos fiches projet.
+          </p>
+          <div style={{ marginBottom: "0.65rem" }}>
+            <label style={{ fontSize: "0.62rem", color: C.textDim, fontFamily: FONT.mono, display: "block", marginBottom: "0.25rem" }}>
+              URL du dossier Drive
+            </label>
+            <input
+              value={googleDriveConfig.folderUrl}
+              onChange={(e) => setGoogleDriveConfig({ folderUrl: e.target.value })}
+              placeholder="https://drive.google.com/drive/folders/…"
+              style={{
+                background: C.surfaceAlt,
+                border: `1px solid ${C.border}`,
+                color: C.text,
+                borderRadius: 6,
+                padding: "0.4rem 0.6rem",
+                fontSize: "0.72rem",
+                fontFamily: FONT.mono,
+                width: "100%",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+          <div style={{ marginBottom: "0.85rem" }}>
+            <label style={{ fontSize: "0.62rem", color: C.textDim, fontFamily: FONT.mono, display: "block", marginBottom: "0.25rem" }}>
+              Nom d'affichage du dossier (optionnel)
+            </label>
+            <input
+              value={googleDriveConfig.folderName}
+              onChange={(e) => setGoogleDriveConfig({ folderName: e.target.value })}
+              placeholder="Mon Drive Artiste"
+              style={{
+                background: C.surfaceAlt,
+                border: `1px solid ${C.border}`,
+                color: C.text,
+                borderRadius: 6,
+                padding: "0.4rem 0.6rem",
+                fontSize: "0.72rem",
+                fontFamily: FONT.mono,
+                width: "100%",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+          {googleDriveConfig.folderUrl && (
+            <>
+              {(() => {
+                const safeFolder = sanitizeUrl(googleDriveConfig.folderUrl);
+                return safeFolder ? (
+                  <a
+                    href={safeFolder}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "0.4rem 0.9rem",
+                      background: C.surfaceAlt,
+                      border: `1px solid ${C.border}`,
+                      borderRadius: 6,
+                      color: C.gold,
+                      textDecoration: "none",
+                      fontSize: "0.72rem",
+                      fontFamily: FONT.mono,
+                      marginBottom: "0.75rem",
+                    }}
+                  >
+                    <span>📁</span>
+                    Ouvrir le dossier Drive
+                  </a>
+                ) : (
+                  <span style={{ fontSize: "0.72rem", color: C.red, fontFamily: FONT.mono, display: "block", marginBottom: "0.75rem" }}>
+                    URL invalide — doit commencer par https:// ou http://
+                  </span>
+                );
+              })()}
+            </>
+          )}
+          <div
+            style={{
+              padding: "0.65rem",
+              background: C.surfaceAlt,
+              borderRadius: 6,
+              fontSize: "0.68rem",
+              color: C.textMuted,
+              fontFamily: FONT.mono,
+            }}
+          >
+            <strong style={{ color: C.textSoft }}>Comment utiliser :</strong>
+            <ol style={{ margin: "0.4rem 0 0", paddingLeft: "1.2rem", lineHeight: 1.8 }}>
+              <li>Collez l'URL de votre dossier Google Drive ci-dessus.</li>
+              <li>Allez dans <strong>Projets</strong> et cliquez sur 🗂 sur une carte projet.</li>
+              <li>Ajoutez des liens (Docs, Sheets, Slides…) pour les référencer depuis le projet.</li>
+            </ol>
+          </div>
+        </Card>
 
         {/* ── Storage info ── */}
         <Card>

@@ -139,6 +139,7 @@ export interface Project {
   tags: string[];
   startDate?: string;
   estimatedEndDate?: string;
+  driveDocRefs?: DriveDocRef[];
 }
 
 // ─── KPIs ─────────────────────────────────────────────────────────────────────
@@ -354,6 +355,24 @@ export interface ScheduleSlot {
   workModeId: string | null;
   projectId: string | null;
   note: string;
+}
+
+// ─── Google Drive ─────────────────────────────────────────────────────────────
+
+export type DriveDocType = "doc" | "sheet" | "slides" | "form" | "folder" | "other";
+
+export interface DriveDocRef {
+  id: string;
+  name: string;
+  url: string;
+  type: DriveDocType;
+  note: string;
+  addedAt: string;
+}
+
+export interface GoogleDriveConfig {
+  folderUrl: string;
+  folderName: string;
 }
 
 // ─── AI Advisor ───────────────────────────────────────────────────────────────

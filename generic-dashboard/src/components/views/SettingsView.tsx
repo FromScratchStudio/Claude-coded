@@ -5,6 +5,7 @@ import { useBreakpoint } from "../../hooks/useBreakpoint";
 import { SectionTitle } from "../ui/SectionTitle";
 import { Card } from "../ui/Card";
 import { btnPrimary, btnSecondary, btnDanger, inputStyle, labelStyle, formRow } from "../ui/Modal";
+import { sanitizeUrl } from "../../services/sanitizeUrl";
 import type { RingConfig, AllocationCategory, AiProviderId, AiProviderConfig, AppConfig } from "../../types";
 import { AI_PROVIDERS } from "../../services/aiService";
 
@@ -24,6 +25,8 @@ export default function SettingsView() {
   const importState = useStore((s) => s.importState);
   const settingsDeepLinkTab = useStore((s) => s.settingsDeepLinkTab);
   const setSettingsDeepLinkTab = useStore((s) => s.setSettingsDeepLinkTab);
+  const googleDriveConfig = useStore((s) => s.googleDriveConfig);
+  const setGoogleDriveConfig = useStore((s) => s.setGoogleDriveConfig);
 
   const { isMobile, isTablet } = useBreakpoint();
 
@@ -32,8 +35,8 @@ export default function SettingsView() {
   const [exportIncludeApiKeys, setExportIncludeApiKeys] = useState(false);
 
   // Tab
-  type SettingsTab = "general" | "rings" | "categories" | "modules" | "time" | "data" | "ai";
-  const VALID_SETTINGS_TABS: SettingsTab[] = ["general", "rings", "categories", "modules", "time", "data", "ai"];
+  type SettingsTab = "general" | "rings" | "categories" | "modules" | "time" | "data" | "ai" | "drive";
+  const VALID_SETTINGS_TABS: SettingsTab[] = ["general", "rings", "categories", "modules", "time", "data", "ai", "drive"];
   const [tab, setTab] = useState<SettingsTab>("general");
 
   // Apply deep-link tab once (e.g. navigated from "Open Settings → AI Advisor")
@@ -186,6 +189,7 @@ export default function SettingsView() {
     { id: "modules", label: "Modules" },
     { id: "time", label: "Time units" },
     { id: "ai", label: "AI Advisor" },
+    { id: "drive", label: "🗂 Google Drive" },
     { id: "data", label: "Data" },
   ] as const;
 
@@ -525,6 +529,89 @@ export default function SettingsView() {
           updateAppConfig={updateAppConfig}
           flashSave={flashSave}
         />
+      )}
+
+      {/* Google Drive */}
+      {tab === "drive" && (
+        <Card style={{ maxWidth: 560 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: "1rem" }}>
+            <span style={{ fontSize: "1.3rem" }}>🗂</span>
+            <div>
+              <div style={{ fontSize: "0.9rem", fontWeight: 600, color: C.text }}>Google Drive</div>
+              <div style={{ fontSize: "0.75rem", color: C.textMuted }}>
+                Link your Google Drive folder and reference documents directly from project cards.
+              </div>
+            </div>
+          </div>
+          <div style={formRow}>
+            <label style={labelStyle}>Drive folder URL</label>
+            <input
+              value={googleDriveConfig.folderUrl}
+              onChange={(e) => setGoogleDriveConfig({ folderUrl: e.target.value })}
+              style={inputStyle}
+              placeholder="https://drive.google.com/drive/folders/..."
+            />
+          </div>
+          <div style={formRow}>
+            <label style={labelStyle}>Folder display name (optional)</label>
+            <input
+              value={googleDriveConfig.folderName}
+              onChange={(e) => setGoogleDriveConfig({ folderName: e.target.value })}
+              style={inputStyle}
+              placeholder="My Project Drive"
+            />
+          </div>
+          {googleDriveConfig.folderUrl && (
+            <div style={{ marginTop: "0.5rem" }}>
+              {(() => {
+                const safeFolder = sanitizeUrl(googleDriveConfig.folderUrl);
+                return safeFolder ? (
+                  <a
+                    href={safeFolder}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "0.4rem 0.9rem",
+                      background: C.surfaceAlt,
+                      border: `1px solid ${C.border}`,
+                      borderRadius: 6,
+                      color: C.accent,
+                      textDecoration: "none",
+                      fontSize: "0.8rem",
+                    }}
+                  >
+                    <span>📁</span>
+                    Open Drive folder
+                  </a>
+                ) : (
+                  <span style={{ fontSize: "0.78rem", color: "#ef4444" }}>
+                    Invalid URL — must start with https:// or http://
+                  </span>
+                );
+              })()}
+            </div>
+          )}
+          <div
+            style={{
+              marginTop: "1.5rem",
+              padding: "0.75rem",
+              background: C.surfaceAlt,
+              borderRadius: 6,
+              fontSize: "0.75rem",
+              color: C.textMuted,
+            }}
+          >
+            <strong style={{ color: C.textSoft }}>How to use:</strong>
+            <ol style={{ margin: "0.5rem 0 0", paddingLeft: "1.2rem", lineHeight: 1.7 }}>
+              <li>Paste your Google Drive folder URL above.</li>
+              <li>Go to <strong>Projects</strong> and click the 🗂 button on any project card.</li>
+              <li>Add document links (Docs, Sheets, Slides…) to reference them from the project.</li>
+            </ol>
+          </div>
+        </Card>
       )}
 
       {/* Data */}

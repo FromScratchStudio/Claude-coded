@@ -6,6 +6,7 @@ import Card from "../ui/Card";
 import SectionTitle from "../ui/SectionTitle";
 import ProgressBar from "../ui/ProgressBar";
 import { StatusBadge, PriorityDot, Tag } from "../ui/Badge";
+import { GoogleDrivePanel, DriveRefBadges } from "../ui/GoogleDrivePanel";
 import type { Project, ProjectStatus, ProjectPriority, RingId } from "../../types";
 
 function generateId() {
@@ -126,6 +127,7 @@ export default function ProjectsView() {
   const [filterRing, setFilterRing] = useState<"all" | RingId>("all");
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [driveProjectId, setDriveProjectId] = useState<string | null>(null);
 
   const filtered = projects.filter((p) => {
     if (filterStatus !== "all" && p.status !== filterStatus) return false;
@@ -278,6 +280,14 @@ export default function ProjectsView() {
                       )}
                     </div>
                   )}
+
+                  {/* Google Drive refs */}
+                  <div style={{ marginTop: "0.5rem" }}>
+                    <DriveRefBadges
+                      refs={project.driveDocRefs ?? []}
+                      onManage={() => setDriveProjectId(project.id)}
+                    />
+                  </div>
                 </>
               )}
             </Card>
@@ -290,6 +300,19 @@ export default function ProjectsView() {
           Aucun projet pour ces filtres.
         </p>
       )}
+
+      {/* Google Drive panel */}
+      {driveProjectId && (() => {
+        const proj = projects.find((p) => p.id === driveProjectId);
+        if (!proj) return null;
+        return (
+          <GoogleDrivePanel
+            projectId={driveProjectId}
+            driveDocRefs={proj.driveDocRefs ?? []}
+            onClose={() => setDriveProjectId(null)}
+          />
+        );
+      })()}
     </div>
   );
 }

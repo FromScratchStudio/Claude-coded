@@ -6,6 +6,7 @@ import type {
   Phase, WorkflowStage, OperationalMode, Principle, RiskPattern,
   CollabCheck, PhaseBudget, ScheduleSlot, WeeklyRetro,
   AiMessage, AiConversation,
+  GoogleDriveConfig, DriveDocRef,
 } from "../types";
 import { DEFAULT_CONFIG } from "../config/defaults";
 import { PROJECTS_INIT } from "../data/projects";
@@ -88,6 +89,9 @@ interface StoreState {
   // AI Advisor
   aiConversations: AiConversation[];
   activeConversationId: string | null;
+
+  // Google Drive
+  googleDriveConfig: GoogleDriveConfig;
 
   // Settings deep-link (cleared after first read; not meaningful to persist)
   settingsDeepLinkTab: string | null;
@@ -226,6 +230,12 @@ interface StoreActions {
   // Settings
   importState: (data: Partial<StoreState>) => void;
   resetToDefaults: () => void;
+
+  // Google Drive
+  setGoogleDriveConfig: (config: Partial<GoogleDriveConfig>) => void;
+  addDriveDocRef: (projectId: string, ref: DriveDocRef) => void;
+  updateDriveDocRef: (projectId: string, refId: string, updates: Partial<Omit<DriveDocRef, "id">>) => void;
+  removeDriveDocRef: (projectId: string, refId: string) => void;
 }
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
@@ -269,6 +279,10 @@ const initialState: StoreState = {
   aiConversations: [],
   activeConversationId: null,
   settingsDeepLinkTab: null,
+  googleDriveConfig: {
+    folderUrl: "",
+    folderName: "",
+  },
 };
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -729,6 +743,42 @@ export const useStore = create<StoreState & StoreActions>()(
         }),
 
       resetToDefaults: () => set({ ...initialState }),
+
+      // ── Google Drive ─────────────────────────────────────────────────────────
+      setGoogleDriveConfig: (config) =>
+        set((s) => ({ googleDriveConfig: { ...s.googleDriveConfig, ...config } })),
+
+      addDriveDocRef: (projectId, ref) =>
+        set((s) => ({
+          projects: s.projects.map((p) =>
+            p.id === projectId
+              ? { ...p, driveDocRefs: [...(p.driveDocRefs ?? []), ref] }
+              : p
+          ),
+        })),
+
+      updateDriveDocRef: (projectId, refId, updates) =>
+        set((s) => ({
+          projects: s.projects.map((p) =>
+            p.id === projectId
+              ? {
+                  ...p,
+                  driveDocRefs: (p.driveDocRefs ?? []).map((r) =>
+                    r.id === refId ? { ...r, ...updates } : r
+                  ),
+                }
+              : p
+          ),
+        })),
+
+      removeDriveDocRef: (projectId, refId) =>
+        set((s) => ({
+          projects: s.projects.map((p) =>
+            p.id === projectId
+              ? { ...p, driveDocRefs: (p.driveDocRefs ?? []).filter((r) => r.id !== refId) }
+              : p
+          ),
+        })),
     }),
     {
       name: "generic-dashboard-v1",
