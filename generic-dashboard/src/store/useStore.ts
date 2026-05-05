@@ -738,6 +738,22 @@ export const useStore = create<StoreState & StoreActions>()(
         // Deep-merge appConfig.modules so newly added module flags (e.g. aiAdvisor)
         // always default to `true` for users with an existing localStorage state.
         if (persisted.appConfig) {
+          // ── Migrate old flat AI config (aiApiKey / aiBaseUrl / aiModel) ──────
+          // Read legacy fields from the RAW persisted snapshot BEFORE the spread
+          // merges in currentState defaults (which would supply aiProvider:"openai"
+          // and make the check useless). We migrate whenever aiProviders.openai is
+          // absent/empty-key, so re-running is safe.
+          const rawPc = persisted.appConfig as unknown as Record<string, unknown>;
+          const legacyApiKey = rawPc["aiApiKey"] as string | undefined;
+          const legacyModel = rawPc["aiModel"] as string | undefined;
+          const legacyBaseUrl = rawPc["aiBaseUrl"] as string | undefined;
+          const existingOpenAiKey = (
+            persisted.appConfig.aiProviders?.openai?.apiKey ?? ""
+          ).trim();
+
+          // Promote legacy key into aiProviders.openai if there is something to migrate
+          const shouldMigrate = legacyApiKey !== undefined && existingOpenAiKey === "";
+
           persisted.appConfig = {
             ...currentState.appConfig,
             ...persisted.appConfig,
@@ -747,19 +763,18 @@ export const useStore = create<StoreState & StoreActions>()(
             },
           };
 
-          // ── Migrate old flat AI config (aiApiKey / aiBaseUrl / aiModel) ──────
-          // These fields no longer exist on AppConfig but may still be present
-          // in old localStorage snapshots. Migrate them into the new aiProviders
-          // structure under the "openai" provider key.
-          const pc = persisted.appConfig as unknown as Record<string, unknown>;
-          if (!persisted.appConfig.aiProvider && pc["aiApiKey"] !== undefined) {
+          if (shouldMigrate) {
             persisted.appConfig.aiProvider = "openai";
             persisted.appConfig.aiProviders = {
               ...persisted.appConfig.aiProviders,
               openai: {
-                apiKey: (pc["aiApiKey"] as string) ?? "",
-                model: (pc["aiModel"] as string) || "gpt-4o-mini",
-                baseUrl: (pc["aiBaseUrl"] as string) || undefined,
+                apiKey: legacyApiKey ?? "",
+                model: legacyModel || "gpt-4o-mini",
+                // Only carry baseUrl over if it differs from the OpenAI default
+                baseUrl:
+                  legacyBaseUrl && legacyBaseUrl !== "https://api.openai.com/v1"
+                    ? legacyBaseUrl
+                    : undefined,
               },
             };
           }

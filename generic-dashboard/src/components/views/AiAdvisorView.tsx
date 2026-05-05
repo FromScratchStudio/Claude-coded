@@ -101,9 +101,22 @@ export default function AiAdvisorView() {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    // Resolve base URL: use provider default unless the config has a custom override
-    const defaultBaseUrl = providerDef?.baseUrl ?? "https://api.openai.com/v1";
-    const baseUrl = providerConfig?.baseUrl?.trim() || defaultBaseUrl;
+    // Resolve base URL:
+    // - For fixed-endpoint providers (openai/anthropic/gemini), always use their hardcoded baseUrl.
+    // - For custom/ollama, honour the stored override (custom requires a non-empty value).
+    const supportsBaseUrlOverride = providerId === "custom" || providerId === "ollama";
+    const baseUrl = supportsBaseUrlOverride
+      ? (providerConfig?.baseUrl?.trim() || providerDef?.baseUrl || "")
+      : (providerDef?.baseUrl ?? "https://api.openai.com/v1");
+
+    if (providerId === "custom" && !baseUrl) {
+      setError("Custom provider requires a Base URL. Please set it in Settings → AI Advisor.");
+      removeLastAiMessage(convId);
+      setIsStreaming(false);
+      abortRef.current = null;
+      return;
+    }
+
     const model = providerConfig?.model?.trim() || providerDef?.defaultModel || "gpt-4o-mini";
 
     try {

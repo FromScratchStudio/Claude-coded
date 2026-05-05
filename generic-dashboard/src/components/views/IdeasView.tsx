@@ -157,7 +157,18 @@ export default function IdeasView() {
       return;
     }
 
-    const baseUrl = providerConfig?.baseUrl?.trim() || providerDef?.baseUrl || "https://api.openai.com/v1";
+    // Only honor stored baseUrl override for providers that support it (custom/ollama).
+    // For fixed-endpoint providers always use the hardcoded default.
+    const supportsBaseUrlOverride = providerId === "custom" || providerId === "ollama";
+    const baseUrl = supportsBaseUrlOverride
+      ? (providerConfig?.baseUrl?.trim() || providerDef?.baseUrl || "")
+      : (providerDef?.baseUrl ?? "https://api.openai.com/v1");
+
+    if (providerId === "custom" && !baseUrl) {
+      setReviewError("Custom provider requires a Base URL. Please set it in Settings → AI Advisor.");
+      return;
+    }
+
     const model = providerConfig?.model?.trim() || providerDef?.defaultModel || "gpt-4o-mini";
 
     const targetIdeas = reviewScope === "all"

@@ -331,7 +331,8 @@ async function* streamOpenAiCompat(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${config.apiKey}`,
+      // Omit the Authorization header when no key is provided (e.g. Ollama local)
+      ...(config.apiKey ? { Authorization: `Bearer ${config.apiKey}` } : {}),
     },
     body: JSON.stringify(payload),
     signal,

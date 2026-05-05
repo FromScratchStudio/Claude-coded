@@ -142,10 +142,13 @@ export default function SettingsView() {
         const cfg = providers[id];
         if (cfg) sanitizedProviders[id] = { ...cfg, apiKey: "" };
       }
-      exportable = {
-        ...state,
-        appConfig: { ...state.appConfig, aiProviders: sanitizedProviders },
-      };
+      // Also remove any legacy flat AI fields that may still be present in
+      // runtime state after a localStorage migration (aiApiKey / aiBaseUrl / aiModel).
+      const sanitizedConfig = { ...state.appConfig, aiProviders: sanitizedProviders };
+      delete (sanitizedConfig as Record<string, unknown>)["aiApiKey"];
+      delete (sanitizedConfig as Record<string, unknown>)["aiBaseUrl"];
+      delete (sanitizedConfig as Record<string, unknown>)["aiModel"];
+      exportable = { ...state, appConfig: sanitizedConfig };
     }
 
     const data = JSON.stringify(exportable, null, 2);
@@ -665,7 +668,21 @@ function AiAdvisorSettingsTab({
               <button
                 key={p.id}
                 onClick={() => {
-                  updateAppConfig({ aiProvider: p.id });
+                  // When switching to a fixed-endpoint provider, clear any stored
+                  // baseUrl override so legacy/migrated values can't silently persist.
+                  const isFixedEndpoint = p.id !== "custom" && p.id !== "ollama";
+                  if (isFixedEndpoint) {
+                    const existingCfg = appConfig.aiProviders?.[p.id as AiProviderId] ?? { apiKey: "", model: p.defaultModel };
+                    updateAppConfig({
+                      aiProvider: p.id,
+                      aiProviders: {
+                        ...appConfig.aiProviders,
+                        [p.id]: { ...existingCfg, baseUrl: undefined },
+                      },
+                    });
+                  } else {
+                    updateAppConfig({ aiProvider: p.id });
+                  }
                   flashSave();
                 }}
                 style={{
