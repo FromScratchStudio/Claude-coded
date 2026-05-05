@@ -1,0 +1,574 @@
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useStore } from "../../store/useStore";
+import { C, FONT } from "../../theme";
+import SectionTitle from "../ui/SectionTitle";
+import { buildContextSnapshot, streamAiResponse, renderMarkdown, AI_PROVIDERS } from "../../services/aiService";
+import type { AiMessage } from "../../types";
+
+const renderMsg = (text: string) => renderMarkdown(text, C.text);
+
+// ─── Suggested prompts ────────────────────────────────────────────────────────
+
+const SUGGESTED_PROMPTS = [
+  "Quels projets nécessitent mon attention cette semaine ?",
+  "Résume les blocages dans mon pipeline de chapitres",
+  "Quelles idées devrais-je prioriser selon mon objectif trimestriel ?",
+  "Donne-moi une recommandation de focus pour la semaine",
+  "Quels sont les risques dans ma phase actuelle ?",
+  "Comment optimiser mon allocation d'énergie cette semaine ?",
+];
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
+export default function AiConseillerView() {
+  const aiConfig = useStore((s) => s.aiConfig);
+  const aiConversations = useStore((s) => s.aiConversations);
+  const activeConversationId = useStore((s) => s.activeConversationId);
+  const createAiConversation = useStore((s) => s.createAiConversation);
+  const appendAiMessage = useStore((s) => s.appendAiMessage);
+  const updateLastAiMessage = useStore((s) => s.updateLastAiMessage);
+  const removeLastAiMessage = useStore((s) => s.removeLastAiMessage);
+  const removeAiConversation = useStore((s) => s.removeAiConversation);
+  const setActiveConversationId = useStore((s) => s.setActiveConversationId);
+  const setActiveView = useStore((s) => s.setActiveView);
+
+  const [input, setInput] = useState("");
+  const [includeSnapshot, setIncludeSnapshot] = useState(true);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Abort any in-progress SSE stream when the component unmounts
+  useEffect(() => () => { abortRef.current?.abort(); }, []);
+
+  const activeConversation = aiConversations.find((c) => c.id === activeConversationId) ?? null;
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [activeConversation?.messages.length, isStreaming]);
+
+  const getSnapshot = useCallback((): string => {
+    const state = useStore.getState();
+    return buildContextSnapshot(state);
+  }, []);
+
+  async function sendMessage(text: string) {
+    if (!text.trim() || isStreaming) return;
+
+    const providerId = aiConfig.provider ?? "openai";
+    const providerDef = AI_PROVIDERS.find((p) => p.id === providerId);
+    const providerConfig = aiConfig.providers?.[providerId];
+    const apiKey = providerConfig?.apiKey?.trim() ?? "";
+
+    if (providerDef?.requiresApiKey && !apiKey) {
+      setError("Aucune clé API configurée. Veuillez définir votre clé API dans Réglages → Conseiller IA.");
+      return;
+    }
+    setError(null);
+
+    let convId = activeConversationId;
+    if (!convId) {
+      convId = createAiConversation(text.slice(0, 60));
+    }
+
+    const userMsg: AiMessage = { role: "user", content: text.trim(), ts: Date.now() };
+    appendAiMessage(convId, userMsg);
+    setInput("");
+
+    let systemContent = aiConfig.systemPrompt || "";
+    if (includeSnapshot) {
+      const snapshot = getSnapshot();
+      systemContent += `\n\n## Données actuelles du tableau de bord:\n${snapshot}`;
+    }
+
+    const currentConv = useStore.getState().aiConversations.find((c) => c.id === convId);
+    const historyMessages: AiMessage[] = currentConv?.messages ?? [userMsg];
+
+    const apiMessages: AiMessage[] = [
+      { role: "system", content: systemContent, ts: 0 },
+      ...historyMessages,
+    ];
+
+    const assistantMsg: AiMessage = { role: "assistant", content: "", ts: Date.now() };
+    appendAiMessage(convId, assistantMsg);
+
+    setIsStreaming(true);
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    const supportsBaseUrlOverride = providerId === "custom" || providerId === "ollama";
+    const baseUrl = supportsBaseUrlOverride
+      ? (providerConfig?.baseUrl?.trim() || providerDef?.baseUrl || "")
+      : (providerDef?.baseUrl ?? "https://api.openai.com/v1");
+
+    if (providerId === "custom" && !baseUrl) {
+      setError("Le fournisseur personnalisé nécessite une URL de base. Veuillez la définir dans Réglages → Conseiller IA.");
+      removeLastAiMessage(convId);
+      setIsStreaming(false);
+      abortRef.current = null;
+      return;
+    }
+
+    const model = providerConfig?.model?.trim() || providerDef?.defaultModel || "gpt-4o-mini";
+
+    try {
+      let accumulated = "";
+      const gen = streamAiResponse(
+        apiMessages,
+        { provider: providerId, apiKey, baseUrl, model, systemPrompt: systemContent },
+        controller.signal
+      );
+
+      for await (const chunk of gen) {
+        accumulated += chunk;
+        updateLastAiMessage(convId, accumulated);
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        const conv = useStore.getState().aiConversations.find((c) => c.id === convId);
+        const msgs = conv?.messages ?? [];
+        const lastMsg = msgs[msgs.length - 1];
+        if (lastMsg?.role === "assistant" && !lastMsg.content) {
+          removeLastAiMessage(convId);
+        }
+      } else {
+        const message = err instanceof Error ? err.message : "Erreur inconnue";
+        updateLastAiMessage(convId, `⚠ Erreur: ${message}`);
+        setError(message);
+      }
+    } finally {
+      setIsStreaming(false);
+      abortRef.current = null;
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(input);
+    }
+  }
+
+  function handleStop() {
+    abortRef.current?.abort();
+  }
+
+  function handleNewConversation() {
+    setActiveConversationId(null);
+    setInput("");
+    setError(null);
+  }
+
+  function handleSuggestedPrompt(prompt: string) {
+    sendMessage(prompt);
+  }
+
+  const providerDef = AI_PROVIDERS.find((p) => p.id === (aiConfig.provider ?? "openai"));
+  const activeProviderConfig = aiConfig.providers?.[aiConfig.provider ?? "openai"];
+  const hasApiKey = !providerDef?.requiresApiKey || !!activeProviderConfig?.apiKey?.trim();
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <SectionTitle accent={C.violet}>Conseiller IA</SectionTitle>
+      <p style={{ fontSize: "0.75rem", color: C.textDim, fontFamily: FONT.mono, margin: "-0.5rem 0 0" }}>
+        Conseiller stratégique IA — analyse vos données de tableau de bord et suggère des actions
+      </p>
+
+      {/* No API key warning */}
+      {!hasApiKey && (
+        <div
+          style={{
+            background: `${C.amber}12`,
+            border: `1px solid ${C.amber}40`,
+            borderRadius: 8,
+            padding: "0.85rem 1.1rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <span style={{ color: C.amber, fontWeight: 600, fontSize: "0.85rem" }}>⚠ Clé API requise</span>
+            <p style={{ margin: "0.25rem 0 0", fontSize: "0.8rem", color: C.textMuted }}>
+              Définissez votre clé API {providerDef?.label ?? "fournisseur"} dans Réglages → Conseiller IA.
+            </p>
+          </div>
+          <button
+            onClick={() => setActiveView("settings")}
+            style={{
+              background: C.amber,
+              border: "none",
+              color: "#000",
+              padding: "0.45rem 1rem",
+              borderRadius: 6,
+              cursor: "pointer",
+              fontSize: "0.82rem",
+              fontWeight: 600,
+              whiteSpace: "nowrap",
+            }}
+          >
+            Aller aux Réglages
+          </button>
+        </div>
+      )}
+
+      {/* Main two-panel layout */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "220px 1fr",
+          gap: "1rem",
+          minHeight: 520,
+        }}
+      >
+        {/* Left panel — conversation list */}
+        <div
+          style={{
+            background: C.surface,
+            border: `1px solid ${C.border}`,
+            borderRadius: 10,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
+          <div style={{ padding: "0.85rem 0.9rem 0.6rem", borderBottom: `1px solid ${C.border}` }}>
+            <button
+              onClick={handleNewConversation}
+              style={{
+                width: "100%",
+                background: C.violet,
+                border: "none",
+                color: "#fff",
+                padding: "0.45rem 0.75rem",
+                borderRadius: 6,
+                cursor: "pointer",
+                fontSize: "0.82rem",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                justifyContent: "center",
+              }}
+            >
+              <span>+</span> Nouveau chat
+            </button>
+          </div>
+
+          <div style={{ flex: 1, overflowY: "auto", padding: "0.5rem" }}>
+            {aiConversations.length === 0 ? (
+              <div style={{ fontSize: "0.75rem", color: C.textDim, padding: "0.75rem 0.5rem", textAlign: "center" }}>
+                Aucune conversation
+              </div>
+            ) : (
+              aiConversations.map((conv) => (
+                <div
+                  key={conv.id}
+                  style={{
+                    padding: "0.5rem 0.65rem",
+                    borderRadius: 6,
+                    background: activeConversationId === conv.id ? `${C.violet}18` : "transparent",
+                    border: `1px solid ${activeConversationId === conv.id ? C.violet + "30" : "transparent"}`,
+                    marginBottom: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 4,
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setActiveConversationId(conv.id)}
+                >
+                  <div style={{ overflow: "hidden" }}>
+                    <div
+                      style={{
+                        fontSize: "0.78rem",
+                        color: activeConversationId === conv.id ? C.text : C.textSoft,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        fontWeight: activeConversationId === conv.id ? 600 : 400,
+                      }}
+                    >
+                      {conv.title}
+                    </div>
+                    <div style={{ fontSize: "0.68rem", color: C.textDim }}>
+                      {conv.messages.length} msg{conv.messages.length !== 1 ? "s" : ""}
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeAiConversation(conv.id);
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: C.textDim,
+                      cursor: "pointer",
+                      fontSize: "0.9rem",
+                      padding: "2px 4px",
+                      borderRadius: 3,
+                      flexShrink: 0,
+                    }}
+                    title="Supprimer la conversation"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Right panel — chat */}
+        <div
+          style={{
+            background: C.surface,
+            border: `1px solid ${C.border}`,
+            borderRadius: 10,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
+          {/* Messages area */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "1rem" }}>
+            {!activeConversation ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: "1.5rem", padding: "2rem 0" }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>✦</div>
+                  <div style={{ fontSize: "0.95rem", color: C.textSoft, fontFamily: FONT.display, marginBottom: "0.4rem" }}>
+                    Demandez à votre Conseiller IA
+                  </div>
+                  <div style={{ fontSize: "0.78rem", color: C.textDim, maxWidth: 380 }}>
+                    Il lit vos données — projets, pipeline de chapitres, KPIs, idées et rétrospectives — pour vous donner des conseils contextuels et actionnables.
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", maxWidth: 500 }}>
+                  {SUGGESTED_PROMPTS.map((prompt) => (
+                    <button
+                      key={prompt}
+                      onClick={() => hasApiKey ? handleSuggestedPrompt(prompt) : setError("Définissez d'abord votre clé API dans Réglages → Conseiller IA.")}
+                      style={{
+                        background: C.surfaceAlt,
+                        border: `1px solid ${C.border}`,
+                        color: C.textSoft,
+                        padding: "0.45rem 0.85rem",
+                        borderRadius: 20,
+                        cursor: "pointer",
+                        fontSize: "0.78rem",
+                        transition: "border-color 0.15s, color 0.15s",
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = C.violet;
+                        (e.currentTarget as HTMLButtonElement).style.color = C.text;
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = C.border;
+                        (e.currentTarget as HTMLButtonElement).style.color = C.textSoft;
+                      }}
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                {activeConversation.messages
+                  .filter((m) => m.role !== "system")
+                  .map((msg, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        display: "flex",
+                        justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
+                      }}
+                    >
+                      <div
+                        style={{
+                          maxWidth: "80%",
+                          padding: "0.6rem 0.9rem",
+                          borderRadius: msg.role === "user" ? "12px 12px 3px 12px" : "12px 12px 12px 3px",
+                          background: msg.role === "user" ? C.violet : C.surfaceAlt,
+                          border: msg.role === "user" ? "none" : `1px solid ${C.border}`,
+                          fontSize: "0.85rem",
+                          lineHeight: 1.6,
+                          color: msg.role === "user" ? "#fff" : C.text,
+                        }}
+                      >
+                        {msg.role === "assistant" ? (
+                          <div
+                            dangerouslySetInnerHTML={{ __html: renderMsg(msg.content || "…") }}
+                          />
+                        ) : (
+                          msg.content
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                {isStreaming && (
+                  <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                    <div
+                      style={{
+                        padding: "0.5rem 0.9rem",
+                        borderRadius: "12px 12px 12px 3px",
+                        background: C.surfaceAlt,
+                        border: `1px solid ${C.border}`,
+                        fontSize: "0.78rem",
+                        color: C.textDim,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      <span style={{ opacity: 0.5 }}>●</span>
+                      <span>En réflexion…</span>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
+
+          {/* Error display */}
+          {error && (
+            <div
+              style={{
+                margin: "0 1rem",
+                padding: "0.5rem 0.85rem",
+                background: `${C.red}12`,
+                border: `1px solid ${C.red}30`,
+                borderRadius: 6,
+                fontSize: "0.78rem",
+                color: C.red,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <span>{error}</span>
+              <button
+                onClick={() => setError(null)}
+                style={{ background: "none", border: "none", color: C.red, cursor: "pointer", fontSize: "0.9rem" }}
+              >
+                ×
+              </button>
+            </div>
+          )}
+
+          {/* Input area */}
+          <div
+            style={{
+              padding: "0.75rem",
+              borderTop: `1px solid ${C.border}`,
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.5rem",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: "0.73rem",
+                  color: C.textMuted,
+                  cursor: "pointer",
+                  userSelect: "none",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={includeSnapshot}
+                  onChange={(e) => setIncludeSnapshot(e.target.checked)}
+                  style={{ accentColor: C.violet }}
+                />
+                Inclure le snapshot du tableau de bord comme contexte
+              </label>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Posez une question ou décrivez un défi… (Entrée pour envoyer, Maj+Entrée pour nouvelle ligne)"
+                disabled={isStreaming}
+                rows={2}
+                style={{
+                  flex: 1,
+                  background: C.bg,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 8,
+                  padding: "0.55rem 0.8rem",
+                  color: C.text,
+                  fontSize: "0.85rem",
+                  outline: "none",
+                  resize: "none",
+                  fontFamily: FONT.body,
+                  lineHeight: 1.5,
+                  boxSizing: "border-box",
+                  opacity: isStreaming ? 0.6 : 1,
+                }}
+              />
+              {isStreaming ? (
+                <button
+                  onClick={handleStop}
+                  style={{
+                    background: C.red,
+                    border: "none",
+                    color: "#fff",
+                    padding: "0.55rem 1rem",
+                    borderRadius: 8,
+                    cursor: "pointer",
+                    fontSize: "0.82rem",
+                    fontWeight: 600,
+                    whiteSpace: "nowrap",
+                    alignSelf: "stretch",
+                  }}
+                >
+                  Arrêter
+                </button>
+              ) : (
+                <button
+                  onClick={() => sendMessage(input)}
+                  disabled={!input.trim() || !hasApiKey}
+                  style={{
+                    background: input.trim() && hasApiKey ? C.violet : C.surfaceAlt,
+                    border: "none",
+                    color: input.trim() && hasApiKey ? "#fff" : C.textDim,
+                    padding: "0.55rem 1.1rem",
+                    borderRadius: 8,
+                    cursor: input.trim() && hasApiKey ? "pointer" : "default",
+                    fontSize: "0.82rem",
+                    fontWeight: 600,
+                    whiteSpace: "nowrap",
+                    alignSelf: "stretch",
+                    transition: "background 0.15s",
+                  }}
+                >
+                  Envoyer ↑
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Info footer */}
+      <div style={{ fontSize: "0.72rem", color: C.textVeryDim, textAlign: "center" }}>
+        Votre clé API est envoyée directement à {providerDef?.label ?? "le fournisseur IA"} depuis votre navigateur. Elle est stockée uniquement dans le stockage local de votre navigateur.
+      </div>
+    </div>
+  );
+}
