@@ -6,7 +6,7 @@ import { SectionTitle } from "../ui/SectionTitle";
 import { Card } from "../ui/Card";
 import { Tag } from "../ui/Badge";
 import { Modal, inputStyle, labelStyle, formRow, btnPrimary, btnSecondary, btnDanger } from "../ui/Modal";
-import { streamAiResponse, renderMarkdown } from "../../services/aiService";
+import { streamAiResponse, renderMarkdown, AI_PROVIDERS } from "../../services/aiService";
 import type { Idea, IdeaStage, AiMessage } from "../../types";
 
 type IdeaStatus = IdeaStage;
@@ -59,6 +59,13 @@ export default function IdeasView() {
   const removeIdea = useStore((s) => s.removeIdea);
   const appConfig = useStore((s) => s.appConfig);
   const quarter = useStore((s) => s.quarter);
+
+  // Derive whether the active provider has an API key (or doesn't need one)
+  const _activeProviderId = appConfig.aiProvider ?? "openai";
+  const _activeProviderDef = AI_PROVIDERS.find((p) => p.id === _activeProviderId);
+  const _activeProviderConfig = appConfig.aiProviders?.[_activeProviderId];
+  const hasAiApiKey =
+    !_activeProviderDef?.requiresApiKey || !!_activeProviderConfig?.apiKey?.trim();
 
   const [showModal, setShowModal] = useState(false);
   const [editIdea, setEditIdea] = useState<Idea | null>(null);
@@ -140,11 +147,29 @@ export default function IdeasView() {
 
   // ── AI Review ────────────────────────────────────────────────────────────────
   async function runAiReview() {
-    const apiKey = appConfig.aiApiKey?.trim();
-    if (!apiKey) {
+    const providerId = appConfig.aiProvider ?? "openai";
+    const providerDef = AI_PROVIDERS.find((p) => p.id === providerId);
+    const providerConfig = appConfig.aiProviders?.[providerId];
+    const apiKey = providerConfig?.apiKey?.trim() ?? "";
+
+    if (providerDef?.requiresApiKey && !apiKey) {
       setReviewError("No API key configured. Set it in Settings → AI Advisor.");
       return;
     }
+
+    // Only honor stored baseUrl override for providers that support it (custom/ollama).
+    // For fixed-endpoint providers always use the hardcoded default.
+    const supportsBaseUrlOverride = providerId === "custom" || providerId === "ollama";
+    const baseUrl = supportsBaseUrlOverride
+      ? (providerConfig?.baseUrl?.trim() || providerDef?.baseUrl || "")
+      : (providerDef?.baseUrl ?? "https://api.openai.com/v1");
+
+    if (providerId === "custom" && !baseUrl) {
+      setReviewError("Custom provider requires a Base URL. Please set it in Settings → AI Advisor.");
+      return;
+    }
+
+    const model = providerConfig?.model?.trim() || providerDef?.defaultModel || "gpt-4o-mini";
 
     const targetIdeas = reviewScope === "all"
       ? ideas
@@ -189,9 +214,10 @@ export default function IdeasView() {
     try {
       let accumulated = "";
       const gen = streamAiResponse(messages, {
+        provider: providerId,
         apiKey,
-        baseUrl: appConfig.aiBaseUrl || "https://api.openai.com/v1",
-        model: appConfig.aiModel || "gpt-4o-mini",
+        baseUrl,
+        model,
         systemPrompt: systemContent,
       });
       for await (const chunk of gen) {
@@ -400,7 +426,7 @@ export default function IdeasView() {
             }}
           >
             {/* No API key warning */}
-            {!appConfig.aiApiKey?.trim() && (
+            {!hasAiApiKey && (
               <div
                 style={{
                   background: `${C.amber}12`,
@@ -535,14 +561,14 @@ export default function IdeasView() {
                 ) : (
                   <button
                     onClick={runAiReview}
-                    disabled={!appConfig.aiApiKey?.trim()}
+                    disabled={!hasAiApiKey}
                     style={{
-                      background: appConfig.aiApiKey?.trim() ? C.accent : C.surfaceAlt,
+                      background: hasAiApiKey ? C.accent : C.surfaceAlt,
                       border: "none",
-                      color: appConfig.aiApiKey?.trim() ? "#fff" : C.textDim,
+                      color: hasAiApiKey ? "#fff" : C.textDim,
                       padding: "0.45rem 1.1rem",
                       borderRadius: 6,
-                      cursor: appConfig.aiApiKey?.trim() ? "pointer" : "default",
+                      cursor: hasAiApiKey ? "pointer" : "default",
                       fontSize: "0.82rem",
                       fontWeight: 600,
                       transition: "background 0.15s",

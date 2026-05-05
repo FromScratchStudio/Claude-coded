@@ -1,8 +1,78 @@
-import type { AiMessage } from "../types";
+import type { AiMessage, AiProviderId } from "../types";
+
+// ─── Provider definitions ─────────────────────────────────────────────────────
+
+export type AiApiFormat = "openai" | "anthropic" | "gemini";
+
+export interface AiProviderDef {
+  id: AiProviderId;
+  label: string;
+  /** Default base URL for this provider. */
+  baseUrl: string;
+  defaultModel: string;
+  /** Curated model list shown in the settings dropdown. */
+  models: string[];
+  requiresApiKey: boolean;
+  apiFormat: AiApiFormat;
+}
+
+export const AI_PROVIDERS: AiProviderDef[] = [
+  {
+    id: "openai",
+    label: "OpenAI",
+    baseUrl: "https://api.openai.com/v1",
+    defaultModel: "gpt-4o-mini",
+    models: ["gpt-4o-mini", "gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo", "o1-mini"],
+    requiresApiKey: true,
+    apiFormat: "openai",
+  },
+  {
+    id: "anthropic",
+    label: "Claude (Anthropic)",
+    baseUrl: "https://api.anthropic.com",
+    defaultModel: "claude-3-5-sonnet-20241022",
+    models: [
+      "claude-3-5-sonnet-20241022",
+      "claude-3-5-haiku-20241022",
+      "claude-3-opus-20240229",
+      "claude-3-haiku-20240307",
+    ],
+    requiresApiKey: true,
+    apiFormat: "anthropic",
+  },
+  {
+    id: "gemini",
+    label: "Gemini (Google)",
+    baseUrl: "https://generativelanguage.googleapis.com",
+    defaultModel: "gemini-1.5-flash",
+    models: ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp"],
+    requiresApiKey: true,
+    apiFormat: "gemini",
+  },
+  {
+    id: "ollama",
+    label: "Ollama (local)",
+    baseUrl: "http://localhost:11434/v1",
+    defaultModel: "llama3.2",
+    models: ["llama3.2", "llama3.1", "mistral", "phi3", "codellama", "gemma2", "qwen2.5"],
+    requiresApiKey: false,
+    apiFormat: "openai",
+  },
+  {
+    id: "custom",
+    label: "Custom (OpenAI-compatible)",
+    baseUrl: "",
+    defaultModel: "",
+    models: [],
+    requiresApiKey: true,
+    apiFormat: "openai",
+  },
+];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface AiConfig {
+  provider: AiProviderId;
   apiKey: string;
   baseUrl: string;
   model: string;
@@ -216,7 +286,27 @@ export function renderMarkdown(text: string, headingColor: string): string {
 
 // ─── Streaming API call ───────────────────────────────────────────────────────
 
+/** Main entry point — dispatches to the right provider-specific streamer. */
 export async function* streamAiResponse(
+  messages: AiMessage[],
+  config: AiConfig,
+  signal?: AbortSignal
+): AsyncGenerator<string> {
+  const providerDef = AI_PROVIDERS.find((p) => p.id === config.provider);
+  const format: AiApiFormat = providerDef?.apiFormat ?? "openai";
+
+  if (format === "anthropic") {
+    yield* streamAnthropic(messages, config, signal);
+  } else if (format === "gemini") {
+    yield* streamGemini(messages, config, signal);
+  } else {
+    yield* streamOpenAiCompat(messages, config, signal);
+  }
+}
+
+// ─── OpenAI-compatible streaming ─────────────────────────────────────────────
+
+async function* streamOpenAiCompat(
   messages: AiMessage[],
   config: AiConfig,
   signal?: AbortSignal
@@ -241,7 +331,8 @@ export async function* streamAiResponse(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${config.apiKey}`,
+      // Omit the Authorization header when no key is provided (e.g. Ollama local)
+      ...(config.apiKey ? { Authorization: `Bearer ${config.apiKey}` } : {}),
     },
     body: JSON.stringify(payload),
     signal,
@@ -252,6 +343,114 @@ export async function* streamAiResponse(
     throw new Error(`API error ${response.status}: ${errorText}`);
   }
 
+  yield* readSseStream(response, (json) => {
+    const choices = (json as { choices?: Array<{ delta?: { content?: unknown } }> }).choices;
+    const delta = choices?.[0]?.delta?.content;
+    return typeof delta === "string" ? delta : null;
+  });
+}
+
+// ─── Anthropic (Claude) streaming ────────────────────────────────────────────
+
+async function* streamAnthropic(
+  messages: AiMessage[],
+  config: AiConfig,
+  signal?: AbortSignal
+): AsyncGenerator<string> {
+  const baseUrl = config.baseUrl.replace(/\/$/, "");
+
+  const systemMsg = messages.find((m) => m.role === "system");
+  const apiMessages = messages
+    .filter((m) => m.role !== "system")
+    .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+
+  const payload: Record<string, unknown> = {
+    model: config.model,
+    max_tokens: 1024,
+    messages: apiMessages,
+    stream: true,
+  };
+  if (systemMsg) payload.system = systemMsg.content;
+
+  const response = await fetch(`${baseUrl}/v1/messages`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": config.apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify(payload),
+    signal,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => response.statusText);
+    throw new Error(`API error ${response.status}: ${errorText}`);
+  }
+
+  yield* readSseStream(response, (json) => {
+    const typed = json as { type?: string; delta?: { type?: string; text?: unknown } };
+    if (typed.type === "content_block_delta" && typed.delta?.type === "text_delta") {
+      return typeof typed.delta.text === "string" ? typed.delta.text : null;
+    }
+    return null;
+  });
+}
+
+// ─── Gemini streaming ─────────────────────────────────────────────────────────
+
+async function* streamGemini(
+  messages: AiMessage[],
+  config: AiConfig,
+  signal?: AbortSignal
+): AsyncGenerator<string> {
+  const baseUrl = config.baseUrl.replace(/\/$/, "");
+
+  const systemMsg = messages.find((m) => m.role === "system");
+  const contents = messages
+    .filter((m) => m.role !== "system")
+    .map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
+
+  const payload: Record<string, unknown> = { contents };
+  if (systemMsg) {
+    payload.systemInstruction = { parts: [{ text: systemMsg.content }] };
+  }
+
+  const url =
+    `${baseUrl}/v1beta/models/${encodeURIComponent(config.model)}:streamGenerateContent` +
+    `?key=${encodeURIComponent(config.apiKey)}&alt=sse`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    signal,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => response.statusText);
+    throw new Error(`API error ${response.status}: ${errorText}`);
+  }
+
+  yield* readSseStream(response, (json) => {
+    type GeminiChunk = {
+      candidates?: Array<{ content?: { parts?: Array<{ text?: unknown }> } }>;
+    };
+    const typed = json as GeminiChunk;
+    const text = typed.candidates?.[0]?.content?.parts?.[0]?.text;
+    return typeof text === "string" ? text : null;
+  });
+}
+
+// ─── SSE reader helper ────────────────────────────────────────────────────────
+
+async function* readSseStream(
+  response: Response,
+  extract: (json: Record<string, unknown>) => string | null
+): AsyncGenerator<string> {
   const reader = response.body?.getReader();
   if (!reader) throw new Error("No response body");
 
@@ -265,11 +464,9 @@ export async function* streamAiResponse(
       if (!trimmed || trimmed === "data: [DONE]") continue;
       if (!trimmed.startsWith("data: ")) continue;
       try {
-        const json = JSON.parse(trimmed.slice(6));
-        const delta = json.choices?.[0]?.delta?.content;
-        if (typeof delta === "string" && delta.length > 0) {
-          yield delta;
-        }
+        const json = JSON.parse(trimmed.slice(6)) as Record<string, unknown>;
+        const delta = extract(json);
+        if (delta !== null && delta.length > 0) yield delta;
       } catch {
         // skip malformed SSE lines
       }
@@ -287,6 +484,6 @@ export async function* streamAiResponse(
     yield* parseLines(lines.join("\n"));
   }
 
-  // Flush any remaining content in the buffer (stream closed without trailing newline)
+  // Flush remaining buffer
   yield* parseLines(buffer);
 }
