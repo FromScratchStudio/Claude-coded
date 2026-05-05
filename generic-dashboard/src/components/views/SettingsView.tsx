@@ -8,6 +8,7 @@ import { btnPrimary, btnSecondary, btnDanger, inputStyle, labelStyle, formRow } 
 import { sanitizeUrl } from "../../services/sanitizeUrl";
 import type { RingConfig, AllocationCategory, AiProviderId, AiProviderConfig, AppConfig } from "../../types";
 import { AI_PROVIDERS } from "../../services/aiService";
+import { driveShareUrlToDownloadUrl, fetchDriveJson } from "../../services/googleDriveService";
 
 const ACCENT_PRESETS = [
   "#4c7fc9", "#7c5cd1", "#27ae7a", "#e07a3c",
@@ -33,6 +34,13 @@ export default function SettingsView() {
   const [saved, setSaved] = useState(false);
   const [importError, setImportError] = useState("");
   const [exportIncludeApiKeys, setExportIncludeApiKeys] = useState(false);
+  const [exportOpenDriveFolder, setExportOpenDriveFolder] = useState(false);
+
+  // Drive import state
+  const [importDriveUrl, setImportDriveUrl] = useState("");
+  const [isDriveFetching, setIsDriveFetching] = useState(false);
+  const [driveImportError, setDriveImportError] = useState("");
+  const [driveImportSuccess, setDriveImportSuccess] = useState(false);
 
   // Tab
   type SettingsTab = "general" | "rings" | "categories" | "modules" | "time" | "data" | "ai" | "drive";
@@ -162,6 +170,15 @@ export default function SettingsView() {
     a.download = `generic-dashboard-export-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
+
+    // When the Drive folder option is enabled, open the folder so the user
+    // can manually upload the downloaded file.
+    if (exportOpenDriveFolder && googleDriveConfig.folderUrl) {
+      const safeFolder = sanitizeUrl(googleDriveConfig.folderUrl);
+      if (safeFolder) {
+        window.open(safeFolder, "_blank", "noopener,noreferrer");
+      }
+    }
   }
 
   function handleImport(e: ChangeEvent<HTMLInputElement>) {
@@ -180,6 +197,34 @@ export default function SettingsView() {
     };
     reader.readAsText(file);
     e.target.value = "";
+  }
+
+  async function handleImportFromDrive() {
+    if (!importDriveUrl.trim()) return;
+    setDriveImportError("");
+    setDriveImportSuccess(false);
+
+    // Validate URL format before entering the loading state
+    const downloadUrl = driveShareUrlToDownloadUrl(importDriveUrl.trim());
+    if (!downloadUrl) {
+      setDriveImportError(
+        "URL not recognised. Paste a Google Drive sharing link (e.g. https://drive.google.com/file/d/…/view)."
+      );
+      return;
+    }
+
+    setIsDriveFetching(true);
+    try {
+      const data = await fetchDriveJson(downloadUrl);
+      importState(data as Parameters<typeof importState>[0]);
+      setDriveImportSuccess(true);
+      setImportDriveUrl("");
+      setTimeout(() => setDriveImportSuccess(false), 3000);
+    } catch (err) {
+      setDriveImportError(err instanceof Error ? err.message : "Unknown error.");
+    } finally {
+      setIsDriveFetching(false);
+    }
   }
 
   const TABS = [
@@ -653,6 +698,37 @@ export default function SettingsView() {
               </p>
             )}
 
+            {/* Google Drive folder option — only when Drive is configured */}
+            {googleDriveConfig.folderUrl && (
+              <>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: "0.5rem",
+                    cursor: "pointer",
+                    userSelect: "none",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={exportOpenDriveFolder}
+                    onChange={(e) => setExportOpenDriveFolder(e.target.checked)}
+                    style={{ accentColor: C.accent, width: 15, height: 15 }}
+                  />
+                  <span style={{ fontSize: "0.8rem", color: C.textSoft }}>
+                    🗂 Also open Google Drive folder after export
+                  </span>
+                </label>
+                {exportOpenDriveFolder && (
+                  <p style={{ fontSize: "0.74rem", color: C.textMuted, margin: "0 0 0.75rem", paddingLeft: 23 }}>
+                    Your Drive folder will open in a new tab — upload the downloaded file there to save it as a backup.
+                  </p>
+                )}
+              </>
+            )}
+
             <button onClick={exportData} style={btnPrimary}>
               Export JSON
             </button>
@@ -677,6 +753,50 @@ export default function SettingsView() {
             </label>
             {importError && (
               <p style={{ color: C.red, fontSize: "0.78rem", marginTop: "0.5rem" }}>{importError}</p>
+            )}
+
+            {/* Google Drive import — only when Drive is configured */}
+            {googleDriveConfig.folderUrl && (
+              <div
+                style={{
+                  marginTop: "1rem",
+                  paddingTop: "1rem",
+                  borderTop: `1px solid ${C.border}`,
+                }}
+              >
+                <div style={{ fontSize: "0.82rem", color: C.textSoft, marginBottom: "0.5rem", fontWeight: 600 }}>
+                  🗂 Import from Google Drive
+                </div>
+                <p style={{ fontSize: "0.78rem", color: C.textMuted, margin: "0 0 0.6rem" }}>
+                  Paste the sharing link of a JSON backup stored in Google Drive. The file must be shared with "Anyone with the link".
+                </p>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <input
+                    value={importDriveUrl}
+                    onChange={(e) => {
+                      setImportDriveUrl(e.target.value);
+                      setDriveImportError("");
+                      setDriveImportSuccess(false);
+                    }}
+                    style={{ ...inputStyle, flex: 1, fontSize: "0.78rem" }}
+                    placeholder="https://drive.google.com/file/d/…/view"
+                    disabled={isDriveFetching}
+                  />
+                  <button
+                    onClick={handleImportFromDrive}
+                    disabled={!importDriveUrl.trim() || isDriveFetching}
+                    style={{ ...btnPrimary, whiteSpace: "nowrap" }}
+                  >
+                    {isDriveFetching ? "Loading…" : "Import"}
+                  </button>
+                </div>
+                {driveImportError && (
+                  <p style={{ color: C.red, fontSize: "0.74rem", marginTop: "0.4rem" }}>{driveImportError}</p>
+                )}
+                {driveImportSuccess && (
+                  <p style={{ color: C.green, fontSize: "0.74rem", marginTop: "0.4rem" }}>✓ Data imported successfully from Google Drive.</p>
+                )}
+              </div>
             )}
           </Card>
 
