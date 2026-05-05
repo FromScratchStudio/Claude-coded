@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { C, FONT } from "../../theme";
 import { useStore } from "../../store/useStore";
 import Card from "../ui/Card";
@@ -90,6 +90,9 @@ export default function IdeasView() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  // Abort any in-progress SSE stream when the component unmounts
+  useEffect(() => () => { abortRef.current?.abort(); }, []);
 
   const activeConversation = aiConversations.find((c) => c.id === activeConversationId) ?? null;
 

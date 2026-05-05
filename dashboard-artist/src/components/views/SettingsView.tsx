@@ -212,7 +212,7 @@ export default function SettingsView() {
               Version du schéma : v2 · Stockage : localStorage
             </p>
             <p style={{ fontSize: "0.65rem", color: C.textVeryDim, margin: 0, fontStyle: "italic" }}>
-              Les données sont exclusivement locales — aucune transmission réseau.
+              Toutes les données du tableau de bord sont exclusivement locales. Seules les requêtes du Conseiller IA sortent du navigateur, envoyées directement au fournisseur IA que vous configurez.
             </p>
           </div>
         </Card>

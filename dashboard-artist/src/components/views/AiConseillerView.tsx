@@ -41,6 +41,9 @@ export default function AiConseillerView() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  // Abort any in-progress SSE stream when the component unmounts
+  useEffect(() => () => { abortRef.current?.abort(); }, []);
+
   const activeConversation = aiConversations.find((c) => c.id === activeConversationId) ?? null;
 
   useEffect(() => {

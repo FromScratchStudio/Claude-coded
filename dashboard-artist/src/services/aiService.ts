@@ -250,6 +250,8 @@ export function escapeHtml(str: string): string {
 
 export function renderMarkdown(text: string, headingColor: string): string {
   const codeBlocks: string[] = [];
+
+  // Step 1: Extract and protect fenced code blocks (already HTML-escaped inside)
   let processed = text.replace(/```[\s\S]*?```/g, (match) => {
     const codeContent = match.slice(3, -3).replace(/^[^\n]*\n/, "");
     const placeholder = `\x00CODEBLOCK${codeBlocks.length}\x00`;
@@ -259,21 +261,33 @@ export function renderMarkdown(text: string, headingColor: string): string {
     return placeholder;
   });
 
+  // Step 2: Extract and protect inline code spans before the global escapeHtml pass
+  // to avoid double-escaping their content.
+  const inlineCodeSpans: string[] = [];
+  processed = processed.replace(/`([^`]+)`/g, (_m, code) => {
+    const placeholder = `\x00INLINECODE${inlineCodeSpans.length}\x00`;
+    inlineCodeSpans.push(
+      `<code style="background:#06080c;border:1px solid #1f2535;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:0.85em">${escapeHtml(code)}</code>`
+    );
+    return placeholder;
+  });
+
+  // Step 3: Escape the remaining plain text
   processed = escapeHtml(processed);
 
+  // Step 4: Apply inline transformations. Lists come before italic to avoid
+  // `* item` being consumed by the *...* italic rule.
   return processed
-    .replace(/`([^`]+)`/g, (_m, code) =>
-      `<code style="background:#06080c;border:1px solid #1f2535;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:0.85em">${escapeHtml(code)}</code>`
-    )
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/^[-*] (.+)$/gm, `<div style="padding-left:1.25rem;margin:0.15rem 0">· $1</div>`)
+    .replace(/^\d+\. (.+)$/gm, `<div style="padding-left:1.25rem;margin:0.15rem 0">$1</div>`)
     .replace(/\*([^*]+)\*/g, "<em>$1</em>")
     .replace(/^### (.+)$/gm, `<div style="font-weight:700;font-size:0.92rem;margin:0.75rem 0 0.25rem;color:${headingColor}">$1</div>`)
     .replace(/^## (.+)$/gm, `<div style="font-weight:700;font-size:0.98rem;margin:0.75rem 0 0.25rem;color:${headingColor}">$1</div>`)
     .replace(/^# (.+)$/gm, `<div style="font-weight:700;font-size:1.05rem;margin:0.75rem 0 0.25rem;color:${headingColor}">$1</div>`)
-    .replace(/^[-*] (.+)$/gm, `<div style="padding-left:1.25rem;margin:0.15rem 0">· $1</div>`)
-    .replace(/^\d+\. (.+)$/gm, `<div style="padding-left:1.25rem;margin:0.15rem 0">$1</div>`)
     .replace(/\n\n/g, "<br/><br/>")
     .replace(/\n/g, "<br/>")
+    .replace(/\x00INLINECODE(\d+)\x00/g, (_m, i) => inlineCodeSpans[Number(i)])
     .replace(/\x00CODEBLOCK(\d+)\x00/g, (_m, i) => codeBlocks[Number(i)]);
 }
 
