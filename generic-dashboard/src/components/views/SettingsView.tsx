@@ -1,4 +1,4 @@
-import { useState, useEffect, type ChangeEvent } from "react";
+import { useState, useEffect, useRef, type ChangeEvent } from "react";
 import { useStore } from "../../store/useStore";
 import { C, applyAccentColor } from "../../theme";
 import { useBreakpoint } from "../../hooks/useBreakpoint";
@@ -41,6 +41,10 @@ export default function SettingsView() {
   const [isDriveFetching, setIsDriveFetching] = useState(false);
   const [driveImportError, setDriveImportError] = useState("");
   const [driveImportSuccess, setDriveImportSuccess] = useState(false);
+  const driveSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Validate the configured Drive folder URL once; used to gate Drive UI sections.
+  const safeDriveFolderUrl = sanitizeUrl(googleDriveConfig.folderUrl);
 
   // Tab
   type SettingsTab = "general" | "rings" | "categories" | "modules" | "time" | "data" | "ai" | "drive";
@@ -219,7 +223,11 @@ export default function SettingsView() {
       importState(data as Parameters<typeof importState>[0]);
       setDriveImportSuccess(true);
       setImportDriveUrl("");
-      setTimeout(() => setDriveImportSuccess(false), 3000);
+      if (driveSuccessTimerRef.current !== null) clearTimeout(driveSuccessTimerRef.current);
+      driveSuccessTimerRef.current = setTimeout(() => {
+        setDriveImportSuccess(false);
+        driveSuccessTimerRef.current = null;
+      }, 3000);
     } catch (err) {
       setDriveImportError(err instanceof Error ? err.message : "Unknown error.");
     } finally {
@@ -698,8 +706,8 @@ export default function SettingsView() {
               </p>
             )}
 
-            {/* Google Drive folder option — only when Drive is configured */}
-            {googleDriveConfig.folderUrl && (
+            {/* Google Drive folder option — only when Drive folder URL is valid */}
+            {safeDriveFolderUrl && (
               <>
                 <label
                   style={{
@@ -755,8 +763,8 @@ export default function SettingsView() {
               <p style={{ color: C.red, fontSize: "0.78rem", marginTop: "0.5rem" }}>{importError}</p>
             )}
 
-            {/* Google Drive import — only when Drive is configured */}
-            {googleDriveConfig.folderUrl && (
+            {/* Google Drive import — only when Drive folder URL is valid */}
+            {safeDriveFolderUrl && (
               <div
                 style={{
                   marginTop: "1rem",

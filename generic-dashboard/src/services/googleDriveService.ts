@@ -28,13 +28,14 @@ export function extractDriveFileId(url: string): string | null {
 }
 
 /**
- * Convert a Google Drive sharing URL to a direct-download URL.
+ * Convert a Google Drive sharing URL to a CORS-friendly direct-download URL
+ * served from drive.usercontent.google.com.
  * Returns null when the input URL format is not recognised.
  */
 export function driveShareUrlToDownloadUrl(shareUrl: string): string | null {
   const fileId = extractDriveFileId(shareUrl);
   if (!fileId) return null;
-  return `https://drive.google.com/uc?export=download&id=${fileId}`;
+  return `https://drive.usercontent.google.com/download?id=${fileId}&export=download`;
 }
 
 /**
@@ -62,8 +63,9 @@ export async function fetchDriveJson(downloadUrl: string): Promise<unknown> {
   const text = await response.text();
 
   // Google sometimes returns an HTML confirmation page for large files.
-  const trimmed = text.trimStart();
-  if (trimmed.startsWith("<!DOCTYPE") || trimmed.startsWith("<html") || trimmed.startsWith("<HTML")) {
+  // Use a case-insensitive check to cover all casing variants.
+  const trimmedLower = text.trimStart().toLowerCase();
+  if (trimmedLower.startsWith("<!doctype") || trimmedLower.startsWith("<html")) {
     throw new Error(
       "Google returned an HTML page instead of JSON. The file may be too large or may require sign-in. Try downloading it manually and using the local import instead."
     );
