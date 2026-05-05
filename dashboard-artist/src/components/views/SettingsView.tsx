@@ -231,34 +231,37 @@ export default function SettingsView() {
           </div>
           {googleDriveConfig.folderUrl && (
             <>
-              {sanitizeUrl(googleDriveConfig.folderUrl) ? (
-                <a
-                  href={sanitizeUrl(googleDriveConfig.folderUrl)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "0.4rem 0.9rem",
-                    background: C.surfaceAlt,
-                    border: `1px solid ${C.border}`,
-                    borderRadius: 6,
-                    color: C.gold,
-                    textDecoration: "none",
-                    fontSize: "0.72rem",
-                    fontFamily: FONT.mono,
-                    marginBottom: "0.75rem",
-                  }}
-                >
-                  <span>📁</span>
-                  Ouvrir le dossier Drive
-                </a>
-              ) : (
-                <span style={{ fontSize: "0.72rem", color: C.red, fontFamily: FONT.mono, display: "block", marginBottom: "0.75rem" }}>
-                  URL invalide — doit commencer par https:// ou http://
-                </span>
-              )}
+              {(() => {
+                const safeFolder = sanitizeUrl(googleDriveConfig.folderUrl);
+                return safeFolder ? (
+                  <a
+                    href={safeFolder}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "0.4rem 0.9rem",
+                      background: C.surfaceAlt,
+                      border: `1px solid ${C.border}`,
+                      borderRadius: 6,
+                      color: C.gold,
+                      textDecoration: "none",
+                      fontSize: "0.72rem",
+                      fontFamily: FONT.mono,
+                      marginBottom: "0.75rem",
+                    }}
+                  >
+                    <span>📁</span>
+                    Ouvrir le dossier Drive
+                  </a>
+                ) : (
+                  <span style={{ fontSize: "0.72rem", color: C.red, fontFamily: FONT.mono, display: "block", marginBottom: "0.75rem" }}>
+                    URL invalide — doit commencer par https:// ou http://
+                  </span>
+                );
+              })()}
             </>
           )}
           <div

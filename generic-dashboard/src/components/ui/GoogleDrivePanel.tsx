@@ -164,20 +164,23 @@ export function GoogleDrivePanel({ projectId, driveDocRefs, onClose }: GoogleDri
               >
                 <span style={{ fontSize: "1rem", flexShrink: 0 }}>{DOC_TYPE_ICONS[ref.type]}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  {sanitizeUrl(ref.url) ? (
-                    <a
-                      href={sanitizeUrl(ref.url)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: C.text, textDecoration: "none", fontSize: "0.82rem", fontWeight: 500, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                    >
-                      {ref.name}
-                    </a>
-                  ) : (
-                    <span style={{ color: C.textVeryDim, fontSize: "0.82rem", fontWeight: 500, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {ref.name}
-                    </span>
-                  )}
+                  {(() => {
+                    const safeUrl = sanitizeUrl(ref.url);
+                    return safeUrl ? (
+                      <a
+                        href={safeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: C.text, textDecoration: "none", fontSize: "0.82rem", fontWeight: 500, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                      >
+                        {ref.name}
+                      </a>
+                    ) : (
+                      <span style={{ color: C.textVeryDim, fontSize: "0.82rem", fontWeight: 500, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {ref.name}
+                      </span>
+                    );
+                  })()}
                   <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2 }}>
                     <span style={{ fontSize: "0.68rem", color: C.textDim, background: C.surfaceAlt, padding: "1px 6px", borderRadius: 4 }}>
                       {DOC_TYPE_LABELS[ref.type]}

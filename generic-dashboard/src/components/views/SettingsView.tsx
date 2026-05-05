@@ -563,32 +563,35 @@ export default function SettingsView() {
           </div>
           {googleDriveConfig.folderUrl && (
             <div style={{ marginTop: "0.5rem" }}>
-              {sanitizeUrl(googleDriveConfig.folderUrl) ? (
-                <a
-                  href={sanitizeUrl(googleDriveConfig.folderUrl)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "0.4rem 0.9rem",
-                    background: C.surfaceAlt,
-                    border: `1px solid ${C.border}`,
-                    borderRadius: 6,
-                    color: C.accent,
-                    textDecoration: "none",
-                    fontSize: "0.8rem",
-                  }}
-                >
-                  <span>📁</span>
-                  Open Drive folder
-                </a>
-              ) : (
-                <span style={{ fontSize: "0.78rem", color: "#ef4444" }}>
-                  Invalid URL — must start with https:// or http://
-                </span>
-              )}
+              {(() => {
+                const safeFolder = sanitizeUrl(googleDriveConfig.folderUrl);
+                return safeFolder ? (
+                  <a
+                    href={safeFolder}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "0.4rem 0.9rem",
+                      background: C.surfaceAlt,
+                      border: `1px solid ${C.border}`,
+                      borderRadius: 6,
+                      color: C.accent,
+                      textDecoration: "none",
+                      fontSize: "0.8rem",
+                    }}
+                  >
+                    <span>📁</span>
+                    Open Drive folder
+                  </a>
+                ) : (
+                  <span style={{ fontSize: "0.78rem", color: "#ef4444" }}>
+                    Invalid URL — must start with https:// or http://
+                  </span>
+                );
+              })()}
             </div>
           )}
           <div
