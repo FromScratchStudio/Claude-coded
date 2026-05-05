@@ -5,6 +5,7 @@ import { SectionTitle } from "../ui/SectionTitle";
 import { Card } from "../ui/Card";
 import { Badge, PriorityDot, StatusBadge, Tag } from "../ui/Badge";
 import { Modal, inputStyle, labelStyle, formRow, btnPrimary, btnSecondary, btnDanger } from "../ui/Modal";
+import { GoogleDrivePanel, DriveRefBadges } from "../ui/GoogleDrivePanel";
 import type { Project, ProjectStatus, ProjectPriority } from "../../types";
 
 function genId() {
@@ -25,6 +26,7 @@ export default function ProjectsView() {
   const [filterRing, setFilterRing] = useState<string>("all");
   const [showModal, setShowModal] = useState(false);
   const [editProject, setEditProject] = useState<Project | null>(null);
+  const [driveProjectId, setDriveProjectId] = useState<string | null>(null);
 
   // Form state
   const [pName, setPName] = useState("");
@@ -300,6 +302,10 @@ export default function ProjectsView() {
                         {project.tags.slice(0, 2).map((tag) => (
                           <Tag key={tag} label={tag} />
                         ))}
+                        <DriveRefBadges
+                          refs={project.driveDocRefs ?? []}
+                          onManage={() => setDriveProjectId(project.id)}
+                        />
                         <button
                           onClick={() => openEdit(project)}
                           style={{
@@ -416,6 +422,19 @@ export default function ProjectsView() {
           </div>
         </div>
       </Modal>
+
+      {/* Google Drive panel */}
+      {driveProjectId && (() => {
+        const proj = projects.find((p) => p.id === driveProjectId);
+        if (!proj) return null;
+        return (
+          <GoogleDrivePanel
+            projectId={driveProjectId}
+            driveDocRefs={proj.driveDocRefs ?? []}
+            onClose={() => setDriveProjectId(null)}
+          />
+        );
+      })()}
     </div>
   );
 }

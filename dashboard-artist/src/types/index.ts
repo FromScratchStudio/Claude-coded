@@ -1,3 +1,21 @@
+// ─── Google Drive ─────────────────────────────────────────────────────────────
+
+export type DriveDocType = "doc" | "sheet" | "slides" | "form" | "folder" | "other";
+
+export interface DriveDocRef {
+  id: string;
+  name: string;
+  url: string;
+  type: DriveDocType;
+  note: string;
+  addedAt: string;
+}
+
+export interface GoogleDriveConfig {
+  folderUrl: string;
+  folderName: string;
+}
+
 // ─── AI Advisor ───────────────────────────────────────────────────────────────
 
 export type AiProviderId = "openai" | "anthropic" | "gemini" | "ollama" | "custom";
@@ -94,6 +112,7 @@ export interface Project {
   priority: ProjectPriority;
   startDate?: string;       // ISO date string
   estimatedEndDate?: string; // ISO date string
+  driveDocRefs?: DriveDocRef[];
 }
 
 // ─── KPIs ─────────────────────────────────────────────────────────────────────
