@@ -106,6 +106,8 @@ function ReaderPanel({
   const safePdfPage = Math.max(1, currentPage);
   const maxPdfPage = chapter.pdfPageCount && chapter.pdfPageCount > 0 ? chapter.pdfPageCount : undefined;
   const canGoToNextPdfPage = maxPdfPage ? safePdfPage < maxPdfPage : true;
+  const bookletStartPage = Math.max(1, safePdfPage % 2 === 0 ? safePdfPage - 1 : safePdfPage);
+  const canGoToNextBookletSpread = maxPdfPage ? bookletStartPage + 2 <= maxPdfPage : true;
 
   return (
     <Card style={{ padding: immersiveMode ? "0.8rem" : "1.25rem", overflow: "hidden" }}>
@@ -157,20 +159,51 @@ function ReaderPanel({
         <iframe
           title={chapter.title}
           src={chapter.pdfUrl}
+          sandbox="allow-downloads"
+          referrerPolicy="no-referrer"
           style={{ width: "100%", minHeight: immersiveMode ? "78vh" : 560, borderRadius: 18, background: "#111" }}
         />
       )}
 
       {chapter.format === "pdf" && chapter.pdfUrl && displayMode === "booklet" && (
-        <div style={{ display: "grid", gap: "0.8rem", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
-          {[safePdfPage, safePdfPage + 1].map((page, index) => (
+        <div style={{ display: "grid", gap: "0.8rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <button
+              onClick={() => setCurrentPage((value) => Math.max(1, value - 2))}
+              disabled={bookletStartPage <= 1}
+              aria-label="Spread PDF précédent"
+              style={{ ...buttonBase, padding: "0.6rem 0.95rem", opacity: bookletStartPage <= 1 ? 0.5 : 1 }}
+            >
+              ← Spread précédent
+            </button>
+            <span style={{ color: C.textSoft, fontSize: "0.84rem" }}>
+              {maxPdfPage
+                ? `Pages ${bookletStartPage}-${Math.min(bookletStartPage + 1, maxPdfPage)} / ${maxPdfPage}`
+                : `Pages ${bookletStartPage}-${bookletStartPage + 1}`}
+            </span>
+            <button
+              onClick={() => setCurrentPage((value) => (maxPdfPage ? Math.min(maxPdfPage, value + 2) : value + 2))}
+              disabled={!canGoToNextBookletSpread}
+              aria-label="Spread PDF suivant"
+              style={{ ...buttonBase, padding: "0.6rem 0.95rem", opacity: canGoToNextBookletSpread ? 1 : 0.5 }}
+            >
+              Spread suivant →
+            </button>
+          </div>
+          <div style={{ display: "grid", gap: "0.8rem", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
+            {[bookletStartPage, bookletStartPage + 1]
+              .filter((page) => !maxPdfPage || page <= maxPdfPage)
+              .map((page, index) => (
             <iframe
               key={`${page}-${index}`}
               title={`${chapter.title} - page ${page}`}
               src={buildPdfPageUrl(chapter.pdfUrl!, page)}
+              sandbox="allow-downloads"
+              referrerPolicy="no-referrer"
               style={{ width: "100%", minHeight: immersiveMode ? "72vh" : 520, borderRadius: 18, background: "#111" }}
             />
-          ))}
+              ))}
+          </div>
         </div>
       )}
 
@@ -200,6 +233,8 @@ function ReaderPanel({
           <iframe
             title={`${chapter.title} - page ${safePdfPage}`}
             src={buildPdfPageUrl(chapter.pdfUrl, safePdfPage)}
+            sandbox="allow-downloads"
+            referrerPolicy="no-referrer"
             style={{ width: "100%", minHeight: immersiveMode ? "76vh" : 540, borderRadius: 18, background: "#111" }}
           />
         </div>

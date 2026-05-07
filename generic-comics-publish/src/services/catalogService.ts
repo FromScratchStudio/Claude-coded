@@ -81,6 +81,16 @@ export async function loadCatalog(url: string): Promise<CatalogData> {
     .map<CatalogTitle | null>((item, index) => {
       const chaptersUrl = resolveAsset(item.chaptersUrl, sourceUrl);
       if (!chaptersUrl) return null;
+      const genres = Array.isArray(item.genres)
+        ? Array.from(
+            new Set(
+              item.genres
+                .filter((genre): genre is string => typeof genre === "string")
+                .map((genre) => genre.trim())
+                .filter(Boolean)
+            )
+          )
+        : [];
       return {
         id: ensureId("title", index, item.id),
         name: item.name?.trim() || `Titre ${index + 1}`,
@@ -89,7 +99,7 @@ export async function loadCatalog(url: string): Promise<CatalogData> {
         accent: normalizeHexColor(item.accent, "#ff6b7d"),
         cover: resolveAsset(item.cover, sourceUrl),
         banner: resolveAsset(item.banner, sourceUrl),
-        genres: Array.isArray(item.genres) ? item.genres.filter(Boolean) : [],
+        genres,
         status: item.status?.trim() || "À découvrir",
         year: typeof item.year === "number" ? item.year : undefined,
         spotlight: item.spotlight?.trim(),
