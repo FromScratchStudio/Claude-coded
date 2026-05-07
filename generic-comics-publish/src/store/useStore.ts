@@ -9,6 +9,7 @@ interface StoreState {
   searchQuery: string;
   selectedGenre: string;
   immersiveMode: boolean;
+  readerDisplayMode: "default" | "booklet" | "paged";
 }
 
 interface StoreActions {
@@ -21,6 +22,7 @@ interface StoreActions {
   setSearchQuery: (value: string) => void;
   setSelectedGenre: (value: string) => void;
   toggleImmersiveMode: () => void;
+  setReaderDisplayMode: (mode: "default" | "booklet" | "paged") => void;
 }
 
 export const useStore = create<StoreState & StoreActions>()(
@@ -33,6 +35,7 @@ export const useStore = create<StoreState & StoreActions>()(
       searchQuery: "",
       selectedGenre: "all",
       immersiveMode: false,
+      readerDisplayMode: "default",
       ensureSource: (url) =>
         set((state) => {
           if (state.sources.includes(url)) {
@@ -69,6 +72,7 @@ export const useStore = create<StoreState & StoreActions>()(
         set((state) => ({
           immersiveMode: !state.immersiveMode,
         })),
+      setReaderDisplayMode: (mode) => set({ readerDisplayMode: mode }),
     }),
     {
       name: "generic-comics-publish-v1",

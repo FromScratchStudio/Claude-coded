@@ -43,6 +43,8 @@ const fadeIn = {
   exit: { opacity: 0, y: -10 },
 };
 
+type ReaderDisplayMode = "default" | "booklet" | "paged";
+
 function formatDate(date?: string) {
   if (!date) return "Date flexible";
   const parsed = new Date(`${date}T00:00:00`);
@@ -59,7 +61,31 @@ function formatSourceLabel(url: string) {
   }
 }
 
-function ReaderPanel({ chapter, immersiveMode }: { chapter: Chapter | null; immersiveMode: boolean }) {
+function buildPdfPageUrl(pdfUrl: string, page: number) {
+  const [base, fragment] = pdfUrl.split("#");
+  const params = new URLSearchParams(fragment || "");
+  params.set("page", String(page));
+  params.set("zoom", "page-width");
+  return `${base}#${params.toString()}`;
+}
+
+function ReaderPanel({
+  chapter,
+  immersiveMode,
+  displayMode,
+  onDisplayModeChange,
+}: {
+  chapter: Chapter | null;
+  immersiveMode: boolean;
+  displayMode: ReaderDisplayMode;
+  onDisplayModeChange: (mode: ReaderDisplayMode) => void;
+}) {
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [chapter?.id, displayMode]);
+
   if (!chapter) {
     return (
       <Card style={{ padding: "1.5rem", minHeight: 360, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -72,6 +98,12 @@ function ReaderPanel({ chapter, immersiveMode }: { chapter: Chapter | null; imme
       </Card>
     );
   }
+
+  const isReaderModeAvailable = chapter.format === "images" || chapter.format === "pdf";
+  const imagePages = chapter.pages ?? [];
+  const totalImagePages = imagePages.length;
+  const safeImagePage = totalImagePages > 0 ? Math.min(currentPage, totalImagePages) : 1;
+  const safePdfPage = Math.max(1, currentPage);
 
   return (
     <Card style={{ padding: immersiveMode ? "0.8rem" : "1.25rem", overflow: "hidden" }}>
@@ -95,12 +127,72 @@ function ReaderPanel({ chapter, immersiveMode }: { chapter: Chapter | null; imme
         </a>
       </div>
 
-      {chapter.format === "pdf" && chapter.pdfUrl && (
+      {isReaderModeAvailable && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: "1rem" }}>
+          {[
+            { id: "default" as const, label: "Standard" },
+            { id: "booklet" as const, label: "Booklet" },
+            { id: "paged" as const, label: "Page par page" },
+          ].map((mode) => (
+            <button
+              key={mode.id}
+              onClick={() => onDisplayModeChange(mode.id)}
+              style={{
+                ...buttonBase,
+                padding: "0.55rem 0.9rem",
+                background: displayMode === mode.id ? "linear-gradient(135deg, var(--accent), var(--accent-secondary))" : C.panelAlt,
+                borderColor: displayMode === mode.id ? "transparent" : C.border,
+                color: displayMode === mode.id ? "#080910" : C.text,
+              }}
+            >
+              {mode.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {chapter.format === "pdf" && chapter.pdfUrl && displayMode === "default" && (
         <iframe
           title={chapter.title}
           src={chapter.pdfUrl}
           style={{ width: "100%", minHeight: immersiveMode ? "78vh" : 560, borderRadius: 18, background: "#111" }}
         />
+      )}
+
+      {chapter.format === "pdf" && chapter.pdfUrl && displayMode === "booklet" && (
+        <div style={{ display: "grid", gap: "0.8rem", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
+          {[safePdfPage, safePdfPage + 1].map((page, index) => (
+            <iframe
+              key={`${page}-${index}`}
+              title={`${chapter.title} - page ${page}`}
+              src={buildPdfPageUrl(chapter.pdfUrl!, page)}
+              style={{ width: "100%", minHeight: immersiveMode ? "72vh" : 520, borderRadius: 18, background: "#111" }}
+            />
+          ))}
+        </div>
+      )}
+
+      {chapter.format === "pdf" && chapter.pdfUrl && displayMode === "paged" && (
+        <div style={{ display: "grid", gap: "0.8rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <button
+              onClick={() => setCurrentPage((value) => Math.max(1, value - 1))}
+              disabled={safePdfPage <= 1}
+              style={{ ...buttonBase, padding: "0.6rem 0.95rem", opacity: safePdfPage <= 1 ? 0.5 : 1 }}
+            >
+              ← Page précédente
+            </button>
+            <span style={{ color: C.textSoft, fontSize: "0.84rem" }}>Page {safePdfPage}</span>
+            <button onClick={() => setCurrentPage((value) => value + 1)} style={{ ...buttonBase, padding: "0.6rem 0.95rem" }}>
+              Page suivante →
+            </button>
+          </div>
+          <iframe
+            title={`${chapter.title} - page ${safePdfPage}`}
+            src={buildPdfPageUrl(chapter.pdfUrl, safePdfPage)}
+            style={{ width: "100%", minHeight: immersiveMode ? "76vh" : 540, borderRadius: 18, background: "#111" }}
+          />
+        </div>
       )}
 
       {chapter.format === "html" && chapter.htmlUrl && (
@@ -112,9 +204,9 @@ function ReaderPanel({ chapter, immersiveMode }: { chapter: Chapter | null; imme
         />
       )}
 
-      {chapter.format === "images" && chapter.pages?.length && (
+      {chapter.format === "images" && totalImagePages > 0 && displayMode === "default" && (
         <div style={{ display: "grid", gap: "1rem" }}>
-          {chapter.pages.map((page, index) => (
+          {imagePages.map((page, index) => (
             <figure key={page.src} style={{ margin: 0 }}>
               <img
                 src={page.src}
@@ -126,6 +218,57 @@ function ReaderPanel({ chapter, immersiveMode }: { chapter: Chapter | null; imme
               </figcaption>
             </figure>
           ))}
+        </div>
+      )}
+
+      {chapter.format === "images" && totalImagePages > 0 && displayMode === "booklet" && (
+        <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+          {imagePages.map((page, index) => (
+            <figure key={page.src} style={{ margin: 0 }}>
+              <img
+                src={page.src}
+                alt={page.alt || `${chapter.title} page ${index + 1}`}
+                style={{ width: "100%", display: "block", borderRadius: 18, border: `1px solid ${C.border}` }}
+              />
+              <figcaption style={{ marginTop: 8, fontSize: "0.78rem", color: C.textDim }}>
+                Page {index + 1}
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      )}
+
+      {chapter.format === "images" && totalImagePages > 0 && displayMode === "paged" && (
+        <div style={{ display: "grid", gap: "0.8rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <button
+              onClick={() => setCurrentPage((value) => Math.max(1, value - 1))}
+              disabled={safeImagePage <= 1}
+              style={{ ...buttonBase, padding: "0.6rem 0.95rem", opacity: safeImagePage <= 1 ? 0.5 : 1 }}
+            >
+              ← Page précédente
+            </button>
+            <span style={{ color: C.textSoft, fontSize: "0.84rem" }}>
+              Page {safeImagePage} / {totalImagePages}
+            </span>
+            <button
+              onClick={() => setCurrentPage((value) => Math.min(totalImagePages, value + 1))}
+              disabled={safeImagePage >= totalImagePages}
+              style={{ ...buttonBase, padding: "0.6rem 0.95rem", opacity: safeImagePage >= totalImagePages ? 0.5 : 1 }}
+            >
+              Page suivante →
+            </button>
+          </div>
+          <figure style={{ margin: 0 }}>
+            <img
+              src={imagePages[safeImagePage - 1].src}
+              alt={imagePages[safeImagePage - 1].alt || `${chapter.title} page ${safeImagePage}`}
+              style={{ width: "100%", display: "block", borderRadius: 18, border: `1px solid ${C.border}` }}
+            />
+            <figcaption style={{ marginTop: 8, fontSize: "0.78rem", color: C.textDim }}>
+              Page {safeImagePage}
+            </figcaption>
+          </figure>
         </div>
       )}
     </Card>
@@ -141,6 +284,7 @@ export default function App() {
   const searchQuery = useStore((state) => state.searchQuery);
   const selectedGenre = useStore((state) => state.selectedGenre);
   const immersiveMode = useStore((state) => state.immersiveMode);
+  const readerDisplayMode = useStore((state) => state.readerDisplayMode);
   const ensureSource = useStore((state) => state.ensureSource);
   const addSource = useStore((state) => state.addSource);
   const removeSource = useStore((state) => state.removeSource);
@@ -150,6 +294,7 @@ export default function App() {
   const setSearchQuery = useStore((state) => state.setSearchQuery);
   const setSelectedGenre = useStore((state) => state.setSelectedGenre);
   const toggleImmersiveMode = useStore((state) => state.toggleImmersiveMode);
+  const setReaderDisplayMode = useStore((state) => state.setReaderDisplayMode);
 
   const [sourceInput, setSourceInput] = useState("");
   const [catalog, setCatalog] = useState<CatalogData | null>(null);
@@ -574,7 +719,12 @@ export default function App() {
                 {immersiveMode ? "Quitter l'immersion" : "Mode immersif"}
               </button>
             </div>
-            <ReaderPanel chapter={selectedChapter} immersiveMode={immersiveMode} />
+            <ReaderPanel
+              chapter={selectedChapter}
+              immersiveMode={immersiveMode}
+              displayMode={readerDisplayMode}
+              onDisplayModeChange={setReaderDisplayMode}
+            />
           </div>
         </section>
       </div>
