@@ -42,6 +42,8 @@ const fadeIn = {
   exit: { opacity: 0, y: -10 },
 };
 
+const HEX_COLOR_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
 function formatDate(date?: string) {
   if (!date) return "Date flexible";
   const parsed = new Date(`${date}T00:00:00`);
@@ -56,6 +58,19 @@ function formatSourceLabel(url: string) {
   } catch {
     return url;
   }
+}
+
+function withAlpha(color: string | undefined, alpha: string, fallback: string) {
+  if (!color || !HEX_COLOR_RE.test(color)) {
+    return fallback;
+  }
+
+  if (color.length === 4) {
+    const [hash, r, g, b] = color;
+    return `${hash}${r}${r}${g}${g}${b}${b}${alpha}`.toLowerCase();
+  }
+
+  return `${color}${alpha}`.toLowerCase();
 }
 
 function ReaderPanel({ chapter, immersiveMode }: { chapter: Chapter | null; immersiveMode: boolean }) {
@@ -106,7 +121,7 @@ function ReaderPanel({ chapter, immersiveMode }: { chapter: Chapter | null; imme
         <iframe
           title={chapter.title}
           src={chapter.htmlUrl}
-          sandbox="allow-scripts allow-same-origin"
+          sandbox="allow-scripts"
           style={{ width: "100%", minHeight: immersiveMode ? "78vh" : 560, borderRadius: 18, background: "#fff" }}
         />
       )}
@@ -269,7 +284,10 @@ export default function App() {
   }, [catalog, searchQuery, selectedGenre]);
 
   useEffect(() => {
-    applyAccent(selectedTitle?.accent || "#ff6b7d", selectedTitle?.accent ? `${selectedTitle.accent}88` : "#7c5cff");
+    applyAccent(
+      selectedTitle?.accent || "#ff6b7d",
+      withAlpha(selectedTitle?.accent, "88", "#7c5cff")
+    );
   }, [selectedTitle]);
 
   const titleFormats = useMemo(() => {
@@ -340,8 +358,8 @@ export default function App() {
                 const active = source === activeSource;
                 return (
                   <div key={source} style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <button
-                      onClick={() => setActiveSource(source)}
+                      <button
+                        onClick={() => setActiveSource(source)}
                       style={{
                         ...buttonBase,
                         padding: "0.7rem 0.95rem",
@@ -353,7 +371,12 @@ export default function App() {
                       {formatSourceLabel(source)}
                     </button>
                     {source !== defaultSourceUrl && (
-                      <button onClick={() => removeSource(source)} style={{ ...buttonBase, padding: "0.65rem 0.75rem" }}>
+                      <button
+                        onClick={() => removeSource(source)}
+                        aria-label={`Supprimer la source ${formatSourceLabel(source)}`}
+                        title={`Supprimer la source ${formatSourceLabel(source)}`}
+                        style={{ ...buttonBase, padding: "0.65rem 0.75rem" }}
+                      >
                         ×
                       </button>
                     )}
@@ -372,7 +395,7 @@ export default function App() {
                   position: "absolute",
                   inset: 0,
                   background: selectedTitle
-                    ? `radial-gradient(circle at top right, ${selectedTitle.accent}35, transparent 34%)`
+                    ? `radial-gradient(circle at top right, ${withAlpha(selectedTitle.accent, "35", "rgba(255,107,125,0.2)")}, transparent 34%)`
                     : "radial-gradient(circle at top right, rgba(255,107,125,0.2), transparent 34%)",
                   pointerEvents: "none",
                 }}
@@ -384,7 +407,7 @@ export default function App() {
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "1fr" : "1.45fr 0.95fr", gap: 18, position: "relative" }}>
                   <div>
-                    <div style={{ ...CHIP_STYLES, marginBottom: 12, borderColor: `${selectedTitle?.accent || C.border}66` }}>
+                    <div style={{ ...CHIP_STYLES, marginBottom: 12, borderColor: withAlpha(selectedTitle?.accent, "66", C.border) }}>
                       <span style={{ width: 8, height: 8, borderRadius: 999, background: selectedTitle?.accent || C.red }} />
                       {catalog?.libraryName || "Catalogue distant"}
                     </div>
@@ -473,8 +496,8 @@ export default function App() {
                           width: "100%",
                           padding: 12,
                           borderRadius: 20,
-                          border: `1px solid ${active ? `${title.accent}88` : C.border}`,
-                          background: active ? `${title.accent}20` : C.panelAlt,
+                          border: `1px solid ${active ? withAlpha(title.accent, "88", C.border) : C.border}`,
+                          background: active ? withAlpha(title.accent, "20", C.panelAlt) : C.panelAlt,
                           color: C.text,
                           cursor: "pointer",
                         }}
@@ -532,8 +555,8 @@ export default function App() {
                           textAlign: "left",
                           padding: "0.9rem 1rem",
                           borderRadius: 18,
-                          border: `1px solid ${active ? `${selectedTitle?.accent || C.red}88` : C.border}`,
-                          background: active ? `${selectedTitle?.accent || C.red}18` : C.panelAlt,
+                          border: `1px solid ${active ? withAlpha(selectedTitle?.accent, "88", C.border) : C.border}`,
+                          background: active ? withAlpha(selectedTitle?.accent, "18", C.panelAlt) : C.panelAlt,
                           color: C.text,
                           cursor: "pointer",
                         }}

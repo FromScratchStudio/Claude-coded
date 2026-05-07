@@ -42,6 +42,8 @@ interface RawChapter {
   pages?: { src?: string; alt?: string }[];
 }
 
+const HEX_COLOR_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
 async function fetchJson<T>(url: string): Promise<T> {
   const safeUrl = sanitizeUrl(url);
   if (!safeUrl) {
@@ -64,6 +66,20 @@ function resolveAsset(url: string | undefined, base: string) {
   return sanitizeUrl(url, base);
 }
 
+function normalizeAccent(value?: string) {
+  const accent = value?.trim();
+  if (!accent || !HEX_COLOR_RE.test(accent)) {
+    return "#ff6b7d";
+  }
+
+  if (accent.length === 4) {
+    const [hash, r, g, b] = accent;
+    return `${hash}${r}${r}${g}${g}${b}${b}`.toLowerCase();
+  }
+
+  return accent.toLowerCase();
+}
+
 export async function loadCatalog(url: string): Promise<CatalogData> {
   const sourceUrl = sanitizeUrl(url);
   if (!sourceUrl) {
@@ -84,7 +100,7 @@ export async function loadCatalog(url: string): Promise<CatalogData> {
         name: item.name?.trim() || `Titre ${index + 1}`,
         author: item.author?.trim() || "Collectif",
         summary: item.summary?.trim() || "Aucune description disponible.",
-        accent: item.accent?.trim() || "#ff6b7d",
+        accent: normalizeAccent(item.accent),
         cover: resolveAsset(item.cover, sourceUrl),
         banner: resolveAsset(item.banner, sourceUrl),
         genres: Array.isArray(item.genres) ? item.genres.filter(Boolean) : [],
