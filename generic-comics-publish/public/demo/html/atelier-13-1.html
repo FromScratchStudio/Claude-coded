@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Atelier 13 — Prototype lumineux</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, system-ui, sans-serif;
+        color: #f8fbff;
+        background:
+          radial-gradient(circle at top, rgba(117, 232, 255, 0.25), transparent 24%),
+          linear-gradient(180deg, #06121a 0%, #102332 100%);
+      }
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 48px 20px 72px;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: clamp(48px, 8vw, 92px);
+        line-height: 0.92;
+        letter-spacing: -0.04em;
+      }
+      p {
+        color: rgba(248, 251, 255, 0.78);
+        line-height: 1.7;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 18px;
+        margin-top: 28px;
+      }
+      .panel {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 24px;
+        padding: 24px;
+        backdrop-filter: blur(18px);
+      }
+      .pulse {
+        width: 100%;
+        height: 180px;
+        border-radius: 28px;
+        margin-top: 28px;
+        background: linear-gradient(120deg, rgba(117, 232, 255, 0.18), rgba(255, 107, 125, 0.2), rgba(255, 215, 107, 0.2));
+        position: relative;
+        overflow: hidden;
+      }
+      .pulse::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+        transform: translateX(-100%);
+        animation: scan 4s linear infinite;
+      }
+      @keyframes scan {
+        to { transform: translateX(100%); }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p>Expérience HTML embarquée</p>
+      <h1>Atelier 13</h1>
+      <p>
+        Ce chapitre démontre comment la plateforme peut embarquer un épisode HTML distant dans une iframe isolée, sans backend.
+        Il peut servir pour des making-of, bonus interactifs, planches motion ou récits web natifs.
+      </p>
+      <div class="pulse"></div>
+      <div class="grid">
+        <div class="panel">
+          <h2>Storyboard liquide</h2>
+          <p>Les séquences peuvent glisser, se superposer et s'animer en toute autonomie dans leur ressource distante.</p>
+        </div>
+        <div class="panel">
+          <h2>Modules bonus</h2>
+          <p>Galeries, dossiers d'auteur, paroles de l'équipe et prototypes éditoriaux trouvent leur place dans le même lecteur.</p>
+        </div>
+        <div class="panel">
+          <h2>Distribution web</h2>
+          <p>Chaque chapitre HTML est simplement référencé par URL dans le JSON distant, puis chargé à la volée côté client.</p>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

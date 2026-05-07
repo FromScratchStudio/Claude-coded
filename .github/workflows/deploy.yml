@@ -33,12 +33,18 @@ jobs:
         working-directory: generic-dashboard
         run: npm ci && npm run build
 
+      - name: Install & build generic-comics-publish
+        working-directory: generic-comics-publish
+        run: npm ci && npm run build
+
       - name: Merge outputs
         run: |
           mkdir -p gh-pages
           cp -r dashboard-artist/dist/. gh-pages/
           mkdir -p gh-pages/generic-dashboard
           cp -r generic-dashboard/dist/. gh-pages/generic-dashboard/
+          mkdir -p gh-pages/generic-comics-publish
+          cp -r generic-comics-publish/dist/. gh-pages/generic-comics-publish/
 
       - uses: actions/upload-pages-artifact@v3
         with:

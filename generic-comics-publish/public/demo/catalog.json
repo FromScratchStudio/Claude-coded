@@ -1,0 +1,46 @@
+{
+  "libraryName": "Neon Panel Network",
+  "description": "Une collection démo de bandes dessinées chargée dynamiquement via des ressources JSON distantes.",
+  "featuredTitleId": "astro-claw",
+  "titles": [
+    {
+      "id": "astro-claw",
+      "name": "Astro Claw",
+      "author": "Mina Volta",
+      "summary": "Une chasseuse de primes féline traverse les anneaux d'une station spatiale fracturée à coups de planches verticales.",
+      "accent": "#ff6b7d",
+      "cover": "./images/astro-cover.svg",
+      "genres": ["Space opera", "Action"],
+      "status": "Saison 1 en ligne",
+      "year": 2026,
+      "spotlight": "Défilement vertical, lecture rapide et mise en page pensée pour le mobile.",
+      "chaptersUrl": "./chapters/astro-claw.json"
+    },
+    {
+      "id": "metro-omen",
+      "name": "Metro Omen",
+      "author": "Yann K. Mercure",
+      "summary": "Un récit noir au format PDF, calibré pour une lecture grand écran et des doubles pages cinématiques.",
+      "accent": "#ffd76b",
+      "cover": "./images/metro-cover.svg",
+      "genres": ["Noir", "Mystère"],
+      "status": "Volume pilote",
+      "year": 2025,
+      "spotlight": "Prévisualisation PDF intégrée, idéale pour des épisodes premium ou des dossiers éditoriaux.",
+      "chaptersUrl": "./chapters/metro-omen.json"
+    },
+    {
+      "id": "atelier-13",
+      "name": "Atelier 13",
+      "author": "Collectif Oblique",
+      "summary": "Une expérience HTML enrichie mêlant narration, ambiance sonore simulée et micro-animations immersives.",
+      "accent": "#75e8ff",
+      "cover": "./images/atelier-cover.svg",
+      "genres": ["Sci-fi", "Experimental"],
+      "status": "Expérience immersive",
+      "year": 2026,
+      "spotlight": "Parfait pour des chapitres webtoon interactifs, dossiers bonus ou making-of éditoriaux.",
+      "chaptersUrl": "./chapters/atelier-13.json"
+    }
+  ]
+}

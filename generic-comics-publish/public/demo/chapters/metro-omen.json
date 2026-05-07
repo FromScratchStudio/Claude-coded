@@ -1,0 +1,15 @@
+{
+  "titleId": "metro-omen",
+  "chapters": [
+    {
+      "id": "metro-001",
+      "number": 1,
+      "title": "Le tunnel des présages",
+      "summary": "Un premier épisode distribué au format PDF pour préserver la composition originale des pages.",
+      "format": "pdf",
+      "publishedAt": "2025-11-02",
+      "estimatedReadingMinutes": 11,
+      "pdfUrl": "../pdf/metro-omen-1.pdf"
+    }
+  ]
+}
