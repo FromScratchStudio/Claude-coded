@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Card } from "./components/ui/Card";
 import { useBreakpoint } from "./hooks/useBreakpoint";
 import { loadCatalog, loadChapters } from "./services/catalogService";
+import { withHexAlpha } from "./services/colorUtils";
 import { sanitizeUrl } from "./services/sanitizeUrl";
 import { useStore } from "./store/useStore";
 import { applyAccent, C, FONT } from "./theme";
@@ -42,8 +43,6 @@ const fadeIn = {
   exit: { opacity: 0, y: -10 },
 };
 
-const HEX_COLOR_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
-
 function formatDate(date?: string) {
   if (!date) return "Date flexible";
   const parsed = new Date(`${date}T00:00:00`);
@@ -58,22 +57,6 @@ function formatSourceLabel(url: string) {
   } catch {
     return url;
   }
-}
-
-function withAlpha(color: string | undefined, alpha: string, fallback: string) {
-  if (!color || !HEX_COLOR_RE.test(color)) {
-    return fallback;
-  }
-
-  if (color.length === 4) {
-    const hash = color[0];
-    const r = color[1];
-    const g = color[2];
-    const b = color[3];
-    return `${hash}${r}${r}${g}${g}${b}${b}${alpha}`.toLowerCase();
-  }
-
-  return `${color}${alpha}`.toLowerCase();
 }
 
 function ReaderPanel({ chapter, immersiveMode }: { chapter: Chapter | null; immersiveMode: boolean }) {
@@ -289,7 +272,7 @@ export default function App() {
   useEffect(() => {
     applyAccent(
       selectedTitle?.accent || "#ff6b7d",
-      withAlpha(selectedTitle?.accent, "88", "#7c5cff")
+      withHexAlpha(selectedTitle?.accent, "88", "#7c5cff")
     );
   }, [selectedTitle]);
 
@@ -398,7 +381,7 @@ export default function App() {
                   position: "absolute",
                   inset: 0,
                   background: selectedTitle
-                    ? `radial-gradient(circle at top right, ${withAlpha(selectedTitle.accent, "35", "rgba(255,107,125,0.2)")}, transparent 34%)`
+                    ? `radial-gradient(circle at top right, ${withHexAlpha(selectedTitle.accent, "35", "rgba(255,107,125,0.2)")}, transparent 34%)`
                     : "radial-gradient(circle at top right, rgba(255,107,125,0.2), transparent 34%)",
                   pointerEvents: "none",
                 }}
@@ -410,7 +393,7 @@ export default function App() {
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "1fr" : "1.45fr 0.95fr", gap: 18, position: "relative" }}>
                   <div>
-                    <div style={{ ...CHIP_STYLES, marginBottom: 12, borderColor: withAlpha(selectedTitle?.accent, "66", C.border) }}>
+                    <div style={{ ...CHIP_STYLES, marginBottom: 12, borderColor: withHexAlpha(selectedTitle?.accent, "66", C.border) }}>
                       <span style={{ width: 8, height: 8, borderRadius: 999, background: selectedTitle?.accent || C.red }} />
                       {catalog?.libraryName || "Catalogue distant"}
                     </div>
@@ -499,8 +482,8 @@ export default function App() {
                           width: "100%",
                           padding: 12,
                           borderRadius: 20,
-                          border: `1px solid ${active ? withAlpha(title.accent, "88", C.border) : C.border}`,
-                          background: active ? withAlpha(title.accent, "20", C.panelAlt) : C.panelAlt,
+                          border: `1px solid ${active ? withHexAlpha(title.accent, "88", C.border) : C.border}`,
+                          background: active ? withHexAlpha(title.accent, "20", C.panelAlt) : C.panelAlt,
                           color: C.text,
                           cursor: "pointer",
                         }}
@@ -558,8 +541,8 @@ export default function App() {
                           textAlign: "left",
                           padding: "0.9rem 1rem",
                           borderRadius: 18,
-                          border: `1px solid ${active ? withAlpha(selectedTitle?.accent, "88", C.border) : C.border}`,
-                          background: active ? withAlpha(selectedTitle?.accent, "18", C.panelAlt) : C.panelAlt,
+                          border: `1px solid ${active ? withHexAlpha(selectedTitle?.accent, "88", C.border) : C.border}`,
+                          background: active ? withHexAlpha(selectedTitle?.accent, "18", C.panelAlt) : C.panelAlt,
                           color: C.text,
                           cursor: "pointer",
                         }}
