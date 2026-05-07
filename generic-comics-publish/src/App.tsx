@@ -171,7 +171,7 @@ function ReaderPanel({
             <button
               onClick={() => setCurrentPage((value) => Math.max(1, value - 2))}
               disabled={bookletStartPage <= 1}
-              aria-label="Spread précédent"
+              aria-label="Aller au spread précédent"
               style={{ ...buttonBase, padding: "0.6rem 0.95rem", opacity: bookletStartPage <= 1 ? 0.5 : 1 }}
             >
               ← Spread précédent
@@ -184,7 +184,7 @@ function ReaderPanel({
             <button
               onClick={() => setCurrentPage((value) => (maxPdfPage ? Math.min(maxPdfPage, value + 2) : value + 2))}
               disabled={!canGoToNextBookletSpread}
-              aria-label="Spread suivant"
+              aria-label="Aller au spread suivant"
               style={{ ...buttonBase, padding: "0.6rem 0.95rem", opacity: canGoToNextBookletSpread ? 1 : 0.5 }}
             >
               Spread suivant →
