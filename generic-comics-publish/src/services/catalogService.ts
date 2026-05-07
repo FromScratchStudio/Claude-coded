@@ -40,6 +40,7 @@ interface RawChapter {
   cover?: string;
   htmlUrl?: string;
   pdfUrl?: string;
+  pdfPageCount?: number;
   pages?: { src?: string; alt?: string }[];
 }
 
@@ -157,6 +158,9 @@ export async function loadChapters(url: string): Promise<ChaptersData> {
         cover: resolveAsset(chapter.cover, sourceUrl),
         htmlUrl: resolveAsset(chapter.htmlUrl, sourceUrl),
         pdfUrl: resolveAsset(chapter.pdfUrl, sourceUrl),
+        pdfPageCount: typeof chapter.pdfPageCount === "number" && chapter.pdfPageCount > 0
+          ? Math.floor(chapter.pdfPageCount)
+          : undefined,
         pages,
       };
     })

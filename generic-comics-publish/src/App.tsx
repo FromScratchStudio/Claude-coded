@@ -104,6 +104,8 @@ function ReaderPanel({
   const totalImagePages = imagePages.length;
   const safeImagePage = totalImagePages > 0 ? Math.min(currentPage, totalImagePages) : 1;
   const safePdfPage = Math.max(1, currentPage);
+  const maxPdfPage = chapter.pdfPageCount && chapter.pdfPageCount > 0 ? chapter.pdfPageCount : undefined;
+  const canGoToNextPdfPage = maxPdfPage ? safePdfPage < maxPdfPage : true;
 
   return (
     <Card style={{ padding: immersiveMode ? "0.8rem" : "1.25rem", overflow: "hidden" }}>
@@ -178,12 +180,20 @@ function ReaderPanel({
             <button
               onClick={() => setCurrentPage((value) => Math.max(1, value - 1))}
               disabled={safePdfPage <= 1}
+              aria-label="Page PDF précédente"
               style={{ ...buttonBase, padding: "0.6rem 0.95rem", opacity: safePdfPage <= 1 ? 0.5 : 1 }}
             >
               ← Page précédente
             </button>
-            <span style={{ color: C.textSoft, fontSize: "0.84rem" }}>Page {safePdfPage}</span>
-            <button onClick={() => setCurrentPage((value) => value + 1)} style={{ ...buttonBase, padding: "0.6rem 0.95rem" }}>
+            <span style={{ color: C.textSoft, fontSize: "0.84rem" }}>
+              {maxPdfPage ? `Page ${safePdfPage} / ${maxPdfPage}` : `Page ${safePdfPage}`}
+            </span>
+            <button
+              onClick={() => setCurrentPage((value) => (maxPdfPage ? Math.min(maxPdfPage, value + 1) : value + 1))}
+              disabled={!canGoToNextPdfPage}
+              aria-label="Page PDF suivante"
+              style={{ ...buttonBase, padding: "0.6rem 0.95rem", opacity: canGoToNextPdfPage ? 1 : 0.5 }}
+            >
               Page suivante →
             </button>
           </div>
@@ -244,6 +254,7 @@ function ReaderPanel({
             <button
               onClick={() => setCurrentPage((value) => Math.max(1, value - 1))}
               disabled={safeImagePage <= 1}
+              aria-label="Page image précédente"
               style={{ ...buttonBase, padding: "0.6rem 0.95rem", opacity: safeImagePage <= 1 ? 0.5 : 1 }}
             >
               ← Page précédente
@@ -254,6 +265,7 @@ function ReaderPanel({
             <button
               onClick={() => setCurrentPage((value) => Math.min(totalImagePages, value + 1))}
               disabled={safeImagePage >= totalImagePages}
+              aria-label="Page image suivante"
               style={{ ...buttonBase, padding: "0.6rem 0.95rem", opacity: safeImagePage >= totalImagePages ? 0.5 : 1 }}
             >
               Page suivante →

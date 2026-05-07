@@ -39,6 +39,7 @@ export interface Chapter {
   cover?: string;
   htmlUrl?: string;
   pdfUrl?: string;
+  pdfPageCount?: number;
   pages?: ChapterImage[];
 }
 
