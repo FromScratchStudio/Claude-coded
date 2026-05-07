@@ -73,7 +73,10 @@ function normalizeAccent(value?: string) {
   }
 
   if (accent.length === 4) {
-    const [hash, r, g, b] = accent;
+    const hash = accent[0];
+    const r = accent[1];
+    const g = accent[2];
+    const b = accent[3];
     return `${hash}${r}${r}${g}${g}${b}${b}`.toLowerCase();
   }
 

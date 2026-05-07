@@ -66,7 +66,10 @@ function withAlpha(color: string | undefined, alpha: string, fallback: string) {
   }
 
   if (color.length === 4) {
-    const [hash, r, g, b] = color;
+    const hash = color[0];
+    const r = color[1];
+    const g = color[2];
+    const b = color[3];
     return `${hash}${r}${r}${g}${g}${b}${b}${alpha}`.toLowerCase();
   }
 
@@ -358,8 +361,8 @@ export default function App() {
                 const active = source === activeSource;
                 return (
                   <div key={source} style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                      <button
-                        onClick={() => setActiveSource(source)}
+                    <button
+                      onClick={() => setActiveSource(source)}
                       style={{
                         ...buttonBase,
                         padding: "0.7rem 0.95rem",
