@@ -602,6 +602,10 @@ function ReaderPanel({
             onKeyDown={(e) => {
               if (e.key === "ArrowRight") setCurrentPage((v) => Math.min(totalImagePages, v + 1));
               if (e.key === "ArrowLeft") setCurrentPage((v) => Math.max(1, v - 1));
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setCurrentPage((v) => Math.min(totalImagePages, v + 1));
+              }
             }}
             onTouchStart={(e) => {
               touchStartX.current = e.touches[0].clientX;
