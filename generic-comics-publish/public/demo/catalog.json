@@ -17,7 +17,7 @@
       "spotlight": "Défilement vertical, lecture rapide et mise en page pensée pour le mobile.",
       "chaptersUrl": "./chapters/astro-claw.json",
       "supportLinks": [
-        { "platform": "kofi",    "url": "https://ko-fi.com",    "label": "Ko-fi", "amount": "3€" },
+        { "platform": "kofi",    "url": "https://ko-fi.com/fromscratchstudio",    "label": "Ko-fi", "amount": "3€" },
         { "platform": "patreon", "url": "https://patreon.com",  "label": "Patreon" }
       ]
     },
@@ -50,7 +50,7 @@
       "spotlight": "Parfait pour des chapitres webtoon interactifs, dossiers bonus ou making-of éditoriaux.",
       "chaptersUrl": "./chapters/atelier-13.json",
       "supportLinks": [
-        { "platform": "kofi",     "url": "https://ko-fi.com",           "label": "Ko-fi" },
+        { "platform": "kofi",     "url": "https://ko-fi.com/fromscratchstudio",           "label": "Ko-fi" },
         { "platform": "paypal",   "url": "https://paypal.me",           "label": "PayPal", "amount": "5€" },
         { "platform": "helloasso","url": "https://www.helloasso.com",   "label": "HelloAsso" }
       ]
