@@ -112,13 +112,15 @@ function DonateSection({
         {author ? `SOUTENIR ${author.toUpperCase()}` : "SOUTENIR L'AUTEUR"}
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-        {links.map((link) => {
+        {links.map((link, index) => {
+          const safeUrl = sanitizeUrl(link.url);
+          if (!safeUrl) return null;
           const color = platformColor(link.platform);
           const displayLabel = link.label ?? link.platform.toUpperCase().replace(/-/g, " ");
           return (
             <a
-              key={link.url}
-              href={link.url}
+              key={`${link.platform}:${safeUrl}:${index}`}
+              href={safeUrl}
               target="_blank"
               rel="noreferrer noopener"
               style={{
@@ -174,33 +176,44 @@ function NewsletterSection({
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const safeNewsletterUrl = newsletterUrl ? sanitizeUrl(newsletterUrl) : undefined;
 
   function isValidEmail(v: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
   }
 
   function handleSubmit() {
-    if (!isValidEmail(email)) {
+    const trimmedEmail = email.trim();
+    if (!isValidEmail(trimmedEmail)) {
       setError("Adresse invalide.");
       return;
     }
 
-    if (newsletterUrl) {
-      try {
-        const url = new URL(newsletterUrl);
-        url.searchParams.set("EMAIL", email);
-        window.open(url.toString(), "_blank", "noopener,noreferrer");
-      } catch {
-        window.open(newsletterUrl, "_blank", "noopener,noreferrer");
-      }
+    if (safeNewsletterUrl) {
+      const url = new URL(safeNewsletterUrl);
+      url.searchParams.set("EMAIL", trimmedEmail);
+      window.open(url.toString(), "_blank", "noopener,noreferrer");
     } else {
       // Demo mode — persist locally so the catalog author can retrieve them
-      const stored: { email: string; date: string }[] = JSON.parse(
-        localStorage.getItem("comics-newsletter-subscribers") ?? "[]"
-      );
-      if (!stored.some((s) => s.email === email)) {
-        stored.push({ email, date: new Date().toISOString() });
-        localStorage.setItem("comics-newsletter-subscribers", JSON.stringify(stored));
+      const storageKey = "comics-newsletter-subscribers";
+      let stored: { email: string; date: string }[] = [];
+      try {
+        const parsed = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
+        if (Array.isArray(parsed)) {
+          stored = parsed.filter(
+            (item): item is { email: string; date: string } =>
+              Boolean(item) &&
+              typeof item === "object" &&
+              typeof (item as { email?: unknown }).email === "string" &&
+              typeof (item as { date?: unknown }).date === "string"
+          );
+        }
+      } catch {
+        localStorage.removeItem(storageKey);
+      }
+      if (!stored.some((s) => s.email === trimmedEmail)) {
+        stored.push({ email: trimmedEmail, date: new Date().toISOString() });
+        localStorage.setItem(storageKey, JSON.stringify(stored));
       }
     }
 
@@ -271,7 +284,7 @@ function NewsletterSection({
       {error && (
         <div style={{ fontSize: 10, color: C.red, marginTop: 5, letterSpacing: "0.08em" }}>{error}</div>
       )}
-      {!newsletterUrl && (
+      {!safeNewsletterUrl && (
         <div style={{ fontSize: 9, color: C.textDim, marginTop: 6, letterSpacing: "0.08em" }}>
           MODE DÉMO — emails stockés localement
         </div>

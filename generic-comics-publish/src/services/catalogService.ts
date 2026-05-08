@@ -1,4 +1,4 @@
-import type { CatalogData, CatalogTitle, Chapter, ChaptersData } from "../types";
+import type { CatalogData, CatalogTitle, Chapter, ChaptersData, SupportLink } from "../types";
 import { normalizeHexColor } from "./colorUtils";
 import { sanitizeUrl } from "./sanitizeUrl";
 
@@ -6,6 +6,8 @@ interface RawCatalog {
   libraryName?: string;
   description?: string;
   featuredTitleId?: string;
+  newsletterUrl?: string;
+  newsletterProvider?: string;
   titles?: RawCatalogTitle[];
 }
 
@@ -22,6 +24,14 @@ interface RawCatalogTitle {
   year?: number;
   spotlight?: string;
   chaptersUrl?: string;
+  supportLinks?: RawSupportLink[];
+}
+
+interface RawSupportLink {
+  platform?: string;
+  url?: string;
+  label?: string;
+  amount?: string;
 }
 
 interface RawChapters {
@@ -66,6 +76,25 @@ function resolveAsset(url: string | undefined, base: string) {
   return sanitizeUrl(url, base);
 }
 
+function normalizeSupportLinks(links: RawSupportLink[] | undefined, base: string): SupportLink[] | undefined {
+  if (!Array.isArray(links)) return undefined;
+
+  const normalized = links
+    .map<SupportLink | null>((link) => {
+      const safeUrl = typeof link.url === "string" ? sanitizeUrl(link.url, base) : undefined;
+      if (!safeUrl) return null;
+
+      const platform = link.platform?.trim() || "support";
+      const label = link.label?.trim() || undefined;
+      const amount = link.amount?.trim() || undefined;
+
+      return { platform, url: safeUrl, label, amount };
+    })
+    .filter((link): link is SupportLink => link !== null);
+
+  return normalized.length > 0 ? normalized : undefined;
+}
+
 export async function loadCatalog(url: string): Promise<CatalogData> {
   const sourceUrl = sanitizeUrl(url);
   if (!sourceUrl) {
@@ -104,6 +133,7 @@ export async function loadCatalog(url: string): Promise<CatalogData> {
         year: typeof item.year === "number" ? item.year : undefined,
         spotlight: item.spotlight?.trim(),
         chaptersUrl,
+        supportLinks: normalizeSupportLinks(item.supportLinks, sourceUrl),
       };
     })
     .filter((item): item is CatalogTitle => item !== null);
@@ -118,6 +148,8 @@ export async function loadCatalog(url: string): Promise<CatalogData> {
       raw.description?.trim() ||
       "Collection distante chargée via JSON, prête à alimenter une vitrine de lecture sans backend.",
     featuredTitleId: raw.featuredTitleId?.trim(),
+    newsletterUrl: typeof raw.newsletterUrl === "string" ? sanitizeUrl(raw.newsletterUrl, sourceUrl) : undefined,
+    newsletterProvider: raw.newsletterProvider?.trim() || undefined,
     sourceUrl,
     titles,
   };
