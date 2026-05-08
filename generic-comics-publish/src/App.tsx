@@ -190,9 +190,14 @@ function NewsletterSection({
     }
 
     if (safeNewsletterUrl) {
-      const url = new URL(safeNewsletterUrl);
-      url.searchParams.set("EMAIL", trimmedEmail);
-      window.open(url.toString(), "_blank", "noopener,noreferrer");
+      try {
+        const url = new URL(safeNewsletterUrl);
+        url.searchParams.set("EMAIL", trimmedEmail);
+        window.open(url.toString(), "_blank", "noopener,noreferrer");
+      } catch {
+        setError("URL newsletter invalide.");
+        return;
+      }
     } else {
       // Demo mode — persist locally so the catalog author can retrieve them
       const storageKey = "comics-newsletter-subscribers";
