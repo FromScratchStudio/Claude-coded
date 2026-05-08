@@ -195,7 +195,7 @@ function NewsletterSection({
         url.searchParams.set("EMAIL", trimmedEmail);
         window.open(url.toString(), "_blank", "noopener,noreferrer");
       } catch {
-        setError("URL newsletter invalide.");
+        setError("Impossible d'ouvrir la page d'inscription.");
         return;
       }
     } else {
