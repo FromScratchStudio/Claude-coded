@@ -6,7 +6,7 @@ import { withHexAlpha } from "./services/colorUtils";
 import { sanitizeUrl } from "./services/sanitizeUrl";
 import { useStore } from "./store/useStore";
 import { applyAccent, C, FONT } from "./theme";
-import type { CatalogData, Chapter, ChaptersData } from "./types";
+import type { CatalogData, Chapter, ChaptersData, SupportLink } from "./types";
 
 // ─── Style tokens ─────────────────────────────────────────────────────────────
 
@@ -69,6 +69,235 @@ const fadeIn = {
 
 type ReaderDisplayMode = "default" | "booklet" | "paged";
 type MobileTab = "home" | "library" | "reader";
+
+// ─── Payment platform colors ──────────────────────────────────────────────────
+
+const PLATFORM_COLORS: Record<string, string> = {
+  paypal: "#0070BA",
+  kofi: "#29ABE0",
+  "ko-fi": "#29ABE0",
+  patreon: "#FF424D",
+  stripe: "#635BFF",
+  bmac: "#FFDD00",
+  "buymeacoffee": "#FFDD00",
+  github: "#f0f6fc",
+  tipeee: "#FF5c5c",
+  helloasso: "#49D38A",
+};
+
+function platformColor(id: string): string {
+  return PLATFORM_COLORS[id.toLowerCase().replace(/[\s_]/g, "-")] ?? C.red;
+}
+
+// ─── DonateSection ────────────────────────────────────────────────────────────
+
+function DonateSection({
+  links,
+  author,
+  compact = false,
+}: {
+  links?: SupportLink[];
+  author?: string;
+  compact?: boolean;
+}) {
+  if (!links?.length) return null;
+  return (
+    <div
+      style={{
+        padding: compact ? "0.85rem 1rem" : "1rem",
+        borderTop: `1px solid ${C.borderSoft}`,
+      }}
+    >
+      <div style={{ ...LABEL, marginBottom: 10 }}>
+        {author ? `SOUTENIR ${author.toUpperCase()}` : "SOUTENIR L'AUTEUR"}
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {links.map((link, index) => {
+          const safeUrl = sanitizeUrl(link.url);
+          if (!safeUrl) return null;
+          const color = platformColor(link.platform);
+          const displayLabel = link.label ?? link.platform.toUpperCase().replace(/-/g, " ");
+          return (
+            <a
+              key={`${link.platform}:${safeUrl}:${index}`}
+              href={safeUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 7,
+                padding: "7px 13px",
+                border: `1px solid ${C.borderMid}`,
+                color: C.text,
+                textDecoration: "none",
+                fontSize: 10,
+                letterSpacing: "0.2em",
+                fontWeight: 500,
+                transition: "border-color 0.12s",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLAnchorElement).style.borderColor = color;
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLAnchorElement).style.borderColor = C.borderMid;
+              }}
+            >
+              <span
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  background: color,
+                  flexShrink: 0,
+                }}
+              />
+              {displayLabel}
+              {link.amount ? ` · ${link.amount}` : ""}
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── NewsletterSection ────────────────────────────────────────────────────────
+
+function NewsletterSection({
+  newsletterUrl,
+  libraryName,
+  compact = false,
+}: {
+  newsletterUrl?: string;
+  libraryName?: string;
+  compact?: boolean;
+}) {
+  const [email, setEmail] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
+  const safeNewsletterUrl = newsletterUrl ? sanitizeUrl(newsletterUrl) : undefined;
+
+  function isValidEmail(v: string) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  }
+
+  function isStoredSubscriberEntry(item: unknown): item is { email: string; date: string } {
+    return Boolean(item) &&
+      typeof item === "object" &&
+      typeof (item as { email?: unknown }).email === "string" &&
+      typeof (item as { date?: unknown }).date === "string";
+  }
+
+  function handleSubmit() {
+    const trimmedEmail = email.trim();
+    if (!isValidEmail(trimmedEmail)) {
+      setError("Adresse invalide.");
+      return;
+    }
+
+    if (safeNewsletterUrl) {
+      try {
+        const url = new URL(safeNewsletterUrl);
+        url.searchParams.set("EMAIL", trimmedEmail);
+        window.open(url.toString(), "_blank", "noopener,noreferrer");
+      } catch {
+        setError("URL d'inscription invalide.");
+        return;
+      }
+    } else {
+      // Demo mode — persist locally so the catalog author can retrieve them
+      const storageKey = "comics-newsletter-subscribers";
+      let stored: { email: string; date: string }[] = [];
+      try {
+        const parsed = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
+        if (Array.isArray(parsed)) {
+          stored = parsed.filter(isStoredSubscriberEntry);
+        }
+      } catch {
+        localStorage.removeItem(storageKey);
+      }
+      if (!stored.some((s) => s.email === trimmedEmail)) {
+        stored.push({ email: trimmedEmail, date: new Date().toISOString() });
+        localStorage.setItem(storageKey, JSON.stringify(stored));
+      }
+    }
+
+    setSubmitted(true);
+    setEmail("");
+    setError("");
+  }
+
+  if (submitted) {
+    return (
+      <div
+        style={{
+          padding: compact ? "0.85rem 1rem" : "1rem",
+          borderTop: `1px solid ${C.borderSoft}`,
+        }}
+      >
+        <div style={{ ...LABEL, color: C.red, marginBottom: 4 }}>ABONNÉ(E) ✓</div>
+        <div style={{ fontSize: 11, color: C.textMuted, letterSpacing: "0.04em" }}>
+          Merci ! Vous recevrez les prochaines parutions.
+        </div>
+        <button
+          onClick={() => setSubmitted(false)}
+          style={{ ...LABEL, marginTop: 10, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+        >
+          Modifier l'adresse
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        padding: compact ? "0.85rem 1rem" : "1rem",
+        borderTop: `1px solid ${C.borderSoft}`,
+      }}
+    >
+      <div style={{ ...LABEL, marginBottom: 6 }}>NEWSLETTER</div>
+      <div style={{ fontSize: 11, color: C.textMuted, letterSpacing: "0.04em", marginBottom: 10 }}>
+        {libraryName
+          ? `Nouvelles parutions de ${libraryName} en avant-première.`
+          : "Recevez les nouvelles parutions en avant-première."}
+      </div>
+      <div style={{ display: "flex", gap: 0 }}>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => { setEmail(e.target.value); setError(""); }}
+          onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+          placeholder="votre@email.com"
+          style={{
+            ...INPUT_STYLE,
+            flex: 1,
+            borderRight: "none",
+            fontSize: 11,
+            padding: "8px 10px",
+          }}
+          aria-label="Adresse e-mail pour la newsletter"
+        />
+        <button
+          onClick={handleSubmit}
+          style={{ ...BTN_RED, flexShrink: 0, padding: "8px 14px" }}
+          aria-label="S'abonner à la newsletter"
+        >
+          S'ABONNER
+        </button>
+      </div>
+      {error && (
+        <div style={{ fontSize: 10, color: C.red, marginTop: 5, letterSpacing: "0.08em" }}>{error}</div>
+      )}
+      {!safeNewsletterUrl && (
+        <div style={{ fontSize: 9, color: C.textDim, marginTop: 6, letterSpacing: "0.08em" }}>
+          MODE DÉMO — emails stockés localement
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -1046,6 +1275,14 @@ export default function App() {
           <div style={{ padding: "1rem", ...LABEL }}>Aucun titre</div>
         )}
       </div>
+
+      {/* Newsletter — always shown in the sidebar once catalog is loaded */}
+      {catalog && (
+        <NewsletterSection
+          newsletterUrl={catalog.newsletterUrl}
+          libraryName={catalog.libraryName}
+        />
+      )}
     </div>
   );
 
@@ -1226,6 +1463,9 @@ export default function App() {
           <div style={{ padding: "1rem 0", ...LABEL }}>AUCUN CHAPITRE</div>
         )}
       </div>
+
+      {/* Donate section — appears when selected title has payment links */}
+      <DonateSection links={selectedTitle?.supportLinks} author={selectedTitle?.author} />
     </div>
   );
 
@@ -1459,6 +1699,22 @@ export default function App() {
                         <div style={{ ...LABEL, fontSize: 9, marginTop: 2 }}>{label}</div>
                       </div>
                     ))}
+                  </div>
+
+                  {/* Donate + Newsletter on mobile home */}
+                  <div style={{ marginTop: 4 }}>
+                    <DonateSection
+                      links={selectedTitle?.supportLinks}
+                      author={selectedTitle?.author}
+                      compact
+                    />
+                    {catalog && (
+                      <NewsletterSection
+                        newsletterUrl={catalog.newsletterUrl}
+                        libraryName={catalog.libraryName}
+                        compact
+                      />
+                    )}
                   </div>
                 </div>
               )}

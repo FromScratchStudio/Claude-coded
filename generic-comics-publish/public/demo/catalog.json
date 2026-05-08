@@ -2,6 +2,7 @@
   "libraryName": "Neon Panel Network",
   "description": "Une collection démo de bandes dessinées chargée dynamiquement via des ressources JSON distantes.",
   "featuredTitleId": "astro-claw",
+  "newsletterUrl": "",
   "titles": [
     {
       "id": "astro-claw",
@@ -14,7 +15,11 @@
       "status": "Saison 1 en ligne",
       "year": 2026,
       "spotlight": "Défilement vertical, lecture rapide et mise en page pensée pour le mobile.",
-      "chaptersUrl": "./chapters/astro-claw.json"
+      "chaptersUrl": "./chapters/astro-claw.json",
+      "supportLinks": [
+        { "platform": "kofi",    "url": "https://ko-fi.com",    "label": "Ko-fi", "amount": "3€" },
+        { "platform": "patreon", "url": "https://patreon.com",  "label": "Patreon" }
+      ]
     },
     {
       "id": "metro-omen",
@@ -27,7 +32,10 @@
       "status": "Volume pilote",
       "year": 2025,
       "spotlight": "Prévisualisation PDF intégrée, idéale pour des épisodes premium ou des dossiers éditoriaux.",
-      "chaptersUrl": "./chapters/metro-omen.json"
+      "chaptersUrl": "./chapters/metro-omen.json",
+      "supportLinks": [
+        { "platform": "paypal", "url": "https://paypal.me", "label": "PayPal" }
+      ]
     },
     {
       "id": "atelier-13",
@@ -40,7 +48,12 @@
       "status": "Expérience immersive",
       "year": 2026,
       "spotlight": "Parfait pour des chapitres webtoon interactifs, dossiers bonus ou making-of éditoriaux.",
-      "chaptersUrl": "./chapters/atelier-13.json"
+      "chaptersUrl": "./chapters/atelier-13.json",
+      "supportLinks": [
+        { "platform": "kofi",     "url": "https://ko-fi.com",           "label": "Ko-fi" },
+        { "platform": "paypal",   "url": "https://paypal.me",           "label": "PayPal", "amount": "5€" },
+        { "platform": "helloasso","url": "https://www.helloasso.com",   "label": "HelloAsso" }
+      ]
     }
   ]
 }

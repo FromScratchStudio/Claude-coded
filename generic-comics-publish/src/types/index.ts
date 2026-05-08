@@ -1,5 +1,12 @@
 export type ChapterFormat = "images" | "pdf" | "html";
 
+export interface SupportLink {
+  platform: string; // "paypal" | "kofi" | "patreon" | "stripe" | "bmac" | "github" | free string
+  url: string;
+  label?: string;   // override display label
+  amount?: string;  // suggested amount e.g. "5€"
+}
+
 export interface CatalogTitle {
   id: string;
   name: string;
@@ -13,6 +20,7 @@ export interface CatalogTitle {
   year?: number;
   spotlight?: string;
   chaptersUrl: string;
+  supportLinks?: SupportLink[];
 }
 
 export interface CatalogData {
@@ -21,6 +29,8 @@ export interface CatalogData {
   featuredTitleId?: string;
   sourceUrl: string;
   titles: CatalogTitle[];
+  newsletterUrl?: string;     // newsletter provider endpoint (Mailchimp, Brevo…)
+  newsletterProvider?: string; // hint for UX copy: "mailchimp" | "brevo" | "substack" | …
 }
 
 export interface ChapterImage {
