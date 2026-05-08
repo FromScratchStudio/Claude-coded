@@ -34,6 +34,8 @@ interface RawSupportLink {
   amount?: string;
 }
 
+const DEFAULT_SUPPORT_PLATFORM = "other-support";
+
 interface RawChapters {
   titleId?: string;
   chapters?: RawChapter[];
@@ -84,7 +86,7 @@ function normalizeSupportLinks(links: RawSupportLink[] | undefined, base: string
       const safeUrl = typeof link.url === "string" ? sanitizeUrl(link.url, base) : undefined;
       if (!safeUrl) return null;
 
-      const platform = link.platform?.trim() || "other-support";
+      const platform = link.platform?.trim() || DEFAULT_SUPPORT_PLATFORM;
       const label = link.label?.trim() || undefined;
       const amount = link.amount?.trim() || undefined;
 

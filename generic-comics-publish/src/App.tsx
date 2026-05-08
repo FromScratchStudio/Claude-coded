@@ -182,6 +182,13 @@ function NewsletterSection({
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
   }
 
+  function isStoredSubscriberEntry(item: unknown): item is { email: string; date: string } {
+    return Boolean(item) &&
+      typeof item === "object" &&
+      typeof (item as { email?: unknown }).email === "string" &&
+      typeof (item as { date?: unknown }).date === "string";
+  }
+
   function handleSubmit() {
     const trimmedEmail = email.trim();
     if (!isValidEmail(trimmedEmail)) {
@@ -195,7 +202,7 @@ function NewsletterSection({
         url.searchParams.set("EMAIL", trimmedEmail);
         window.open(url.toString(), "_blank", "noopener,noreferrer");
       } catch {
-        setError("Impossible d'ouvrir la page d'inscription.");
+        setError("URL d'inscription invalide.");
         return;
       }
     } else {
@@ -205,13 +212,7 @@ function NewsletterSection({
       try {
         const parsed = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
         if (Array.isArray(parsed)) {
-          stored = parsed.filter(
-            (item): item is { email: string; date: string } =>
-              Boolean(item) &&
-              typeof item === "object" &&
-              typeof (item as { email?: unknown }).email === "string" &&
-              typeof (item as { date?: unknown }).date === "string"
-          );
+          stored = parsed.filter(isStoredSubscriberEntry);
         }
       } catch {
         localStorage.removeItem(storageKey);
