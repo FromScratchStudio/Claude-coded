@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 960" fill="none">
+  <rect width="720" height="960" rx="48" fill="#05131a"/>
+  <rect x="88" y="128" width="544" height="704" rx="36" fill="#0d2330" stroke="#75e8ff" stroke-width="8"/>
+  <circle cx="360" cy="384" r="116" fill="#75e8ff" fill-opacity="0.28"/>
+  <circle cx="360" cy="384" r="72" fill="#ff6b7d" fill-opacity="0.52"/>
+  <text x="112" y="180" fill="#75e8ff" font-size="112" font-family="Arial Black, Arial">ATELIER</text>
+  <text x="114" y="292" fill="#ffffff" font-size="112" font-family="Arial Black, Arial">13</text>
+</svg>

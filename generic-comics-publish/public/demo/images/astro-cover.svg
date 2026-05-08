@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 960" fill="none">
+  <rect width="720" height="960" rx="48" fill="#120b1f"/>
+  <path d="M0 720 720 280v680H0z" fill="#ff6b7d" fill-opacity="0.2"/>
+  <circle cx="560" cy="184" r="108" fill="#ffd76b"/>
+  <path d="M120 680c80-120 180-180 300-180 70 0 130 18 180 52" stroke="#75e8ff" stroke-width="24" stroke-linecap="round"/>
+  <path d="M168 492c74-138 172-206 292-206 84 0 156 28 216 84" stroke="#fff" stroke-width="14" stroke-linecap="round" opacity="0.85"/>
+  <text x="80" y="160" fill="#fff" font-size="120" font-family="Arial Black, Arial" letter-spacing="4">ASTRO</text>
+  <text x="82" y="276" fill="#ff6b7d" font-size="120" font-family="Arial Black, Arial" letter-spacing="4">CLAW</text>
+</svg>

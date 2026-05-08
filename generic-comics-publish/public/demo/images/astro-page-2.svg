@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" fill="none">
+  <rect width="1080" height="1920" fill="#0d1022"/>
+  <rect x="76" y="82" width="928" height="832" rx="36" fill="#171d39" stroke="#75e8ff" stroke-width="10"/>
+  <rect x="76" y="960" width="928" height="878" rx="36" fill="#2a1730" stroke="#ff6b7d" stroke-width="10"/>
+  <path d="M164 748h752" stroke="#fff" stroke-width="18" stroke-linecap="round"/>
+  <path d="M188 1240c126-92 270-138 432-138 122 0 242 28 360 84" stroke="#ffd76b" stroke-width="20" stroke-linecap="round"/>
+  <text x="144" y="192" fill="#75e8ff" font-size="72" font-family="Arial Black, Arial">Marché orbital</text>
+  <text x="144" y="1110" fill="#ff6b7d" font-size="72" font-family="Arial Black, Arial">Course-poursuite</text>
+  <text x="144" y="1660" fill="#fff" font-size="56" font-family="Arial, sans-serif">Le flux vertical des planches garde la lecture fluide sur écran tactile.</text>
+</svg>

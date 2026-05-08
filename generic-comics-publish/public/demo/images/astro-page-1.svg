@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" fill="none">
+  <rect width="1080" height="1920" fill="#120b1f"/>
+  <rect x="72" y="72" width="936" height="1776" rx="44" fill="#171226" stroke="#ff6b7d" stroke-width="10"/>
+  <circle cx="790" cy="290" r="126" fill="#ffd76b"/>
+  <path d="M186 1526c138-290 348-478 628-564" stroke="#75e8ff" stroke-width="24" stroke-linecap="round"/>
+  <path d="M260 1050c120-180 290-270 510-270" stroke="#fff" stroke-width="18" stroke-linecap="round" opacity="0.9"/>
+  <text x="150" y="240" fill="#fff" font-size="120" font-family="Arial Black, Arial">ASTRO CLAW</text>
+  <text x="152" y="370" fill="#ff6b7d" font-size="72" font-family="Arial, sans-serif">Chapitre 1 · Quai orbital</text>
+  <text x="160" y="1680" fill="#fff" font-size="58" font-family="Arial, sans-serif">« Le contrat sent le carburant brûlé et les dettes de station. »</text>
+</svg>

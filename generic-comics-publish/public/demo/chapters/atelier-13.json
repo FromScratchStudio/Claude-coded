@@ -1,0 +1,15 @@
+{
+  "titleId": "atelier-13",
+  "chapters": [
+    {
+      "id": "atelier-001",
+      "number": 1,
+      "title": "Prototype lumineux",
+      "summary": "Un chapitre HTML autonome, pensé comme un mini-site immersif embarqué dans le lecteur.",
+      "format": "html",
+      "publishedAt": "2026-02-08",
+      "estimatedReadingMinutes": 8,
+      "htmlUrl": "../html/atelier-13-1.html"
+    }
+  ]
+}

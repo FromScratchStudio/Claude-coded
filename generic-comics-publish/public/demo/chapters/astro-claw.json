@@ -1,0 +1,19 @@
+{
+  "titleId": "astro-claw",
+  "chapters": [
+    {
+      "id": "astro-001",
+      "number": 1,
+      "title": "La station aux griffes rouges",
+      "summary": "Astro Claw infiltre un marché orbital en trois pages verticales nerveuses.",
+      "format": "images",
+      "publishedAt": "2026-04-15",
+      "estimatedReadingMinutes": 6,
+      "pages": [
+        { "src": "../images/astro-page-1.svg", "alt": "Astro Claw sur le quai spatial" },
+        { "src": "../images/astro-page-2.svg", "alt": "Poursuite dans le marché orbital" },
+        { "src": "../images/astro-page-3.svg", "alt": "Combat final sur la passerelle" }
+      ]
+    }
+  ]
+}

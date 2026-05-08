@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" fill="none">
+  <rect width="1080" height="1920" fill="#140d19"/>
+  <path d="M0 360 1080 90v612L0 972z" fill="#ff6b7d" fill-opacity="0.22"/>
+  <path d="M0 1220 1080 930v690H0z" fill="#75e8ff" fill-opacity="0.18"/>
+  <circle cx="320" cy="396" r="118" fill="#ffd76b"/>
+  <circle cx="760" cy="1304" r="156" fill="#ff6b7d" fill-opacity="0.32"/>
+  <path d="M192 1100c164-214 376-322 636-322" stroke="#fff" stroke-width="24" stroke-linecap="round"/>
+  <text x="120" y="188" fill="#fff" font-size="92" font-family="Arial Black, Arial">Passerelle finale</text>
+  <text x="122" y="1710" fill="#75e8ff" font-size="58" font-family="Arial, sans-serif">Support natif des chapitres image, page après page.</text>
+</svg>

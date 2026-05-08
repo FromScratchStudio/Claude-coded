@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 960" fill="none">
+  <rect width="720" height="960" rx="48" fill="#0a0d15"/>
+  <path d="M100 860 620 120" stroke="#ffd76b" stroke-width="28" stroke-linecap="round" opacity="0.85"/>
+  <path d="M84 864h552L360 360z" fill="#1a2032"/>
+  <text x="84" y="180" fill="#ffd76b" font-size="126" font-family="Arial Black, Arial">METRO</text>
+  <text x="84" y="298" fill="#ffffff" font-size="126" font-family="Arial Black, Arial">OMEN</text>
+  <circle cx="510" cy="692" r="82" fill="#ff6b7d" fill-opacity="0.55"/>
+</svg>
