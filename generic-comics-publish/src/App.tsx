@@ -604,7 +604,11 @@ function ReaderPanel({
               if (e.key === "ArrowLeft") setCurrentPage((v) => Math.max(1, v - 1));
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                setCurrentPage((v) => Math.min(totalImagePages, v + 1));
+                if (e.shiftKey) {
+                  setCurrentPage((v) => Math.max(1, v - 1));
+                } else {
+                  setCurrentPage((v) => Math.min(totalImagePages, v + 1));
+                }
               }
             }}
             onTouchStart={(e) => {
