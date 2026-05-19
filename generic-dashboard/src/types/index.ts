@@ -344,6 +344,7 @@ export interface WeeklyRetro {
 // ─── Weekly calendar ──────────────────────────────────────────────────────────
 
 export type DayIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+export type ScheduleSlotType = "planned" | "unplanned";
 
 export interface ScheduleSlot {
   id: string;
@@ -355,6 +356,11 @@ export interface ScheduleSlot {
   workModeId: string | null;
   projectId: string | null;
   note: string;
+  slotType?: ScheduleSlotType;
+  title?: string;
+  description?: string;
+  startTime?: string;
+  endTime?: string;
 }
 
 // ─── Google Drive ─────────────────────────────────────────────────────────────

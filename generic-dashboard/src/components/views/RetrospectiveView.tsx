@@ -35,6 +35,7 @@ function addDays(date: Date, days: number): Date {
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 function fmtDate(date: Date): string {
   return `${date.getDate()} ${MONTHS[date.getMonth()]}`;
 }
@@ -52,6 +53,10 @@ function fmtDuration(min: number): string {
   const h = Math.floor(min / 60);
   const m = min % 60;
   return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, "0")}`;
+}
+
+function isUnplannedSlot(slot: { slotType?: string }): boolean {
+  return (slot.slotType ?? "planned") === "unplanned";
 }
 
 /** Returns the Monday (UTC midnight) for the given ISO year+week. */
@@ -167,17 +172,34 @@ export default function RetrospectiveView() {
     [scheduleSlots, weekKey]
   );
 
-  const totalUtCount = weekSlots.reduce((acc, s) => acc + s.utCount, 0);
-  const totalPlannedMin = weekSlots.reduce((acc, s) => acc + s.durationMin, 0);
+  const plannedWeekSlots = useMemo(
+    () => weekSlots.filter((slot) => !isUnplannedSlot(slot)),
+    [weekSlots]
+  );
+  const unplannedSlots = useMemo(
+    () =>
+      weekSlots
+        .filter((slot) => isUnplannedSlot(slot))
+        .sort((a, b) => {
+          if (a.day !== b.day) return a.day - b.day;
+          const aStart = a.startTime ?? `${String(a.hour).padStart(2, "0")}:00`;
+          const bStart = b.startTime ?? `${String(b.hour).padStart(2, "0")}:00`;
+          return aStart.localeCompare(bStart);
+        }),
+    [weekSlots]
+  );
+
+  const totalUtCount = plannedWeekSlots.reduce((acc, s) => acc + s.utCount, 0);
+  const totalPlannedMin = plannedWeekSlots.reduce((acc, s) => acc + s.durationMin, 0);
 
   const slotsByMode = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const s of weekSlots) {
+    for (const s of plannedWeekSlots) {
       const key = s.workModeId ?? "__none__";
       map[key] = (map[key] ?? 0) + s.durationMin;
     }
     return map;
-  }, [weekSlots]);
+  }, [plannedWeekSlots]);
 
   const sortedRetros = useMemo(
     () => [...weeklyRetros].sort((a, b) => b.weekKey.localeCompare(a.weekKey)),
@@ -315,6 +337,28 @@ export default function RetrospectiveView() {
                     );
                   })}
                 </div>
+                {unplannedSlots.length > 0 && (
+                  <div style={{ marginTop: "0.85rem", borderTop: `1px solid ${C.border}`, paddingTop: "0.75rem" }}>
+                    <div style={{ fontSize: "0.72rem", color: C.textDim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.5rem" }}>
+                      Unplanned tasks ({unplannedSlots.length})
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                      {unplannedSlots.map((slot) => (
+                        <div key={slot.id} style={{ border: `1px solid ${C.orange}40`, background: `${C.orange}10`, borderRadius: 6, padding: "0.45rem 0.55rem" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: slot.description ? 3 : 0 }}>
+                            <span style={{ fontSize: "0.74rem", color: C.orange, fontWeight: 600 }}>{slot.title || "Unplanned task"}</span>
+                            <span style={{ fontSize: "0.7rem", color: C.textMuted }}>
+                              {DAYS[slot.day]} · {slot.startTime ?? `${String(slot.hour).padStart(2, "0")}:00`}–{slot.endTime ?? `${String(Math.min(slot.hour + 1, 23)).padStart(2, "0")}:00`}
+                            </span>
+                          </div>
+                          {slot.description && (
+                            <div style={{ fontSize: "0.72rem", color: C.textMuted }}>{slot.description}</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </Card>

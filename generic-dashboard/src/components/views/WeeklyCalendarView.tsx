@@ -4,11 +4,12 @@ import { C } from "../../theme";
 import { useBreakpoint } from "../../hooks/useBreakpoint";
 import { SectionTitle } from "../ui/SectionTitle";
 import { Modal, inputStyle, labelStyle, formRow, btnPrimary, btnSecondary, btnDanger } from "../ui/Modal";
-import type { DayIndex, ScheduleSlot } from "../../types";
+import type { DayIndex, ScheduleSlot, ScheduleSlotType } from "../../types";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const HOURS = Array.from({ length: 17 }, (_, i) => i + 6);
 const SLOT_HEIGHT = 36;
+const UNPLANNED_COLOR = C.orange;
 
 function getISOWeekKey(date: Date): string {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -54,6 +55,11 @@ export default function WeeklyCalendarView() {
   const [sModeId, setSModeId] = useState<string | null>(null);
   const [sProjectId, setSProjectId] = useState<string | null>(null);
   const [sNote, setSNote] = useState("");
+  const [sSlotType, setSSlotType] = useState<ScheduleSlotType>("planned");
+  const [sTitle, setSTitle] = useState("");
+  const [sDescription, setSDescription] = useState("");
+  const [sStartTime, setSStartTime] = useState("09:00");
+  const [sEndTime, setSEndTime] = useState("10:00");
 
   const monday = useMemo(() => getMondayOfWeek(weekOffset), [weekOffset]);
   const weekKey = useMemo(() => getISOWeekKey(monday), [monday]);
@@ -64,8 +70,45 @@ export default function WeeklyCalendarView() {
   );
 
   const utCount = weekSlots.reduce((sum, s) => sum + s.utCount, 0);
+  const unplannedSlots = useMemo(
+    () =>
+      weekSlots
+        .filter((slot) => (slot.slotType ?? "planned") === "unplanned")
+        .sort((a, b) => {
+          if (a.day !== b.day) return a.day - b.day;
+          const aStart = a.startTime ?? `${String(a.hour).padStart(2, "0")}:00`;
+          const bStart = b.startTime ?? `${String(b.hour).padStart(2, "0")}:00`;
+          return aStart.localeCompare(bStart);
+        }),
+    [weekSlots]
+  );
   const weeklyTarget = appConfig.weeklyTimeUnitTarget;
   const { timeUnitLabel } = appConfig;
+
+  function parseTimeToMinutes(value: string): number | null {
+    const match = value.match(/^(\d{2}):(\d{2})$/);
+    if (!match) return null;
+    const hour = Number(match[1]);
+    const minute = Number(match[2]);
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+    return hour * 60 + minute;
+  }
+
+  function formatHourToTime(hour: number): string {
+    return `${String(hour).padStart(2, "0")}:00`;
+  }
+
+  function getSlotLabel(slot: ScheduleSlot, slotModeName?: string): string {
+    if ((slot.slotType ?? "planned") === "unplanned") {
+      return slot.title?.trim() || "Unplanned task";
+    }
+    return slot.note || slotModeName || "–";
+  }
+
+  function getSlotColor(slot: ScheduleSlot, slotModeColor?: string): string {
+    if ((slot.slotType ?? "planned") === "unplanned") return UNPLANNED_COLOR;
+    return slotModeColor ?? C.accent;
+  }
 
   function openNewSlot(day: DayIndex, hour: number) {
     setEditSlot(null);
@@ -76,10 +119,35 @@ export default function WeeklyCalendarView() {
     setSModeId(workModes[0]?.id ?? null);
     setSProjectId(null);
     setSNote("");
+    setSSlotType("planned");
+    setSTitle("");
+    setSDescription("");
+    setSStartTime(formatHourToTime(hour));
+    setSEndTime(formatHourToTime(Math.min(hour + 1, 23)));
+    setShowModal(true);
+  }
+
+  function openNewUnplannedSlot() {
+    setEditSlot(null);
+    setSDay(activeMobileDay);
+    setSHour(9);
+    setSDuration(defaultSlotDurationMin);
+    setSUtCount(0);
+    setSModeId(null);
+    setSProjectId(null);
+    setSNote("");
+    setSSlotType("unplanned");
+    setSTitle("");
+    setSDescription("");
+    setSStartTime("09:00");
+    setSEndTime("10:00");
     setShowModal(true);
   }
 
   function openEditSlot(slot: ScheduleSlot) {
+    const startTime = slot.startTime ?? formatHourToTime(slot.hour);
+    const slotDurationHour = slot.durationMin > 0 ? slot.durationMin / 60 : 1;
+    const fallbackEndHour = Math.min(slot.hour + Math.max(1, Math.ceil(slotDurationHour)), 23);
     setEditSlot(slot);
     setSDay(slot.day);
     setSHour(slot.hour);
@@ -88,30 +156,80 @@ export default function WeeklyCalendarView() {
     setSModeId(slot.workModeId);
     setSProjectId(slot.projectId);
     setSNote(slot.note ?? "");
+    setSSlotType(slot.slotType ?? "planned");
+    setSTitle(slot.title ?? "");
+    setSDescription(slot.description ?? "");
+    setSStartTime(startTime);
+    setSEndTime(slot.endTime ?? formatHourToTime(fallbackEndHour));
     setShowModal(true);
   }
 
   function save() {
+    let slotHour = sHour;
+    let slotDuration = sDuration;
+    let slotUtCount = sUtCount;
+    let slotWorkModeId = sModeId;
+    let slotProjectId = sProjectId;
+    let slotNote = sNote;
+    let slotTitle: string | undefined;
+    let slotDescription: string | undefined;
+    let slotStartTime: string | undefined;
+    let slotEndTime: string | undefined;
+
+    if (sSlotType === "unplanned") {
+      const title = sTitle.trim();
+      if (!title) {
+        alert("Title is required for unplanned tasks.");
+        return;
+      }
+      const startMinutes = parseTimeToMinutes(sStartTime);
+      const endMinutes = parseTimeToMinutes(sEndTime);
+      if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) {
+        alert("Please enter a valid start and end time.");
+        return;
+      }
+      slotHour = Math.floor(startMinutes / 60);
+      slotDuration = endMinutes - startMinutes;
+      slotUtCount = 0;
+      slotWorkModeId = null;
+      slotProjectId = null;
+      slotNote = "";
+      slotTitle = title;
+      slotDescription = sDescription.trim();
+      slotStartTime = sStartTime;
+      slotEndTime = sEndTime;
+    }
+
     if (editSlot) {
       updateScheduleSlot(editSlot.id, {
         day: sDay,
-        hour: sHour,
-        durationMin: sDuration,
-        utCount: sUtCount,
-        workModeId: sModeId,
-        projectId: sProjectId,
-        note: sNote,
+        hour: slotHour,
+        durationMin: slotDuration,
+        utCount: slotUtCount,
+        workModeId: slotWorkModeId,
+        projectId: slotProjectId,
+        note: slotNote,
+        slotType: sSlotType,
+        title: slotTitle,
+        description: slotDescription,
+        startTime: slotStartTime,
+        endTime: slotEndTime,
       });
     } else {
       addScheduleSlot({
         weekKey,
         day: sDay,
-        hour: sHour,
-        durationMin: sDuration,
-        utCount: sUtCount,
-        workModeId: sModeId,
-        projectId: sProjectId,
-        note: sNote,
+        hour: slotHour,
+        durationMin: slotDuration,
+        utCount: slotUtCount,
+        workModeId: slotWorkModeId,
+        projectId: slotProjectId,
+        note: slotNote,
+        slotType: sSlotType,
+        title: slotTitle,
+        description: slotDescription,
+        startTime: slotStartTime,
+        endTime: slotEndTime,
       });
     }
     setShowModal(false);
@@ -142,6 +260,10 @@ export default function WeeklyCalendarView() {
               onClick={() => { setRetroWeekOffset(weekOffset); setActiveView("retrospective"); }}
               style={{ background: `${C.accent}20`, border: `1px solid ${C.accent}50`, color: C.accent, borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: "0.75rem" }}
             >Retro →</button>
+            <button
+              onClick={openNewUnplannedSlot}
+              style={{ background: `${UNPLANNED_COLOR}20`, border: `1px solid ${UNPLANNED_COLOR}50`, color: UNPLANNED_COLOR, borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: "0.75rem" }}
+            >+ Unplanned</button>
           </div>
         }
       >
@@ -201,7 +323,8 @@ export default function WeeklyCalendarView() {
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
                     {slotsInCell.map((slot) => {
                       const slotMode = workModes.find((m) => m.id === slot.workModeId);
-                      const color = slotMode?.color ?? C.accent;
+                      const color = getSlotColor(slot, slotMode?.color);
+                      const label = getSlotLabel(slot, slotMode?.name);
                       return (
                         <div
                           key={slot.id}
@@ -209,7 +332,7 @@ export default function WeeklyCalendarView() {
                           style={{ background: `${color}25`, border: `1px solid ${color}60`, borderRadius: 4, padding: "3px 8px", fontSize: "0.75rem", color, cursor: "pointer" }}
                         >
                           {slot.utCount > 0 && <span style={{ marginRight: 4 }}>&#9670;</span>}
-                          {slot.note || slotMode?.name || "–"}
+                          {label}
                           <span style={{ marginLeft: 4, opacity: 0.6, fontSize: "0.68rem" }}>{fmtDuration(slot.durationMin)}</span>
                         </div>
                       );
@@ -248,7 +371,8 @@ export default function WeeklyCalendarView() {
                 >
                   {slotsInCell.map((slot) => {
                     const slotMode = workModes.find((m) => m.id === slot.workModeId);
-                    const color = slotMode?.color ?? C.accent;
+                    const color = getSlotColor(slot, slotMode?.color);
+                    const label = getSlotLabel(slot, slotMode?.name);
                     const heightPx = Math.round((slot.durationMin / 60) * SLOT_HEIGHT);
                     return (
                       <div
@@ -257,7 +381,7 @@ export default function WeeklyCalendarView() {
                         style={{ position: "absolute", top: 1, left: 2, right: 2, height: Math.max(heightPx - 2, 20), background: `${color}25`, border: `1px solid ${color}60`, borderRadius: 4, padding: "2px 4px", fontSize: "0.65rem", color, overflow: "hidden", cursor: "pointer", zIndex: 1 }}
                       >
                         {slot.utCount > 0 && <span style={{ marginRight: 2 }}>&#9670;</span>}
-                        {slot.note || slotMode?.name || "–"}
+                        {label}
                       </div>
                     );
                   })}
@@ -270,6 +394,10 @@ export default function WeeklyCalendarView() {
       )}
 
       <div style={{ display: "flex", gap: 8, marginTop: "1rem", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: "0.72rem" }}>
+          <span style={{ width: 10, height: 10, borderRadius: 2, background: UNPLANNED_COLOR, display: "inline-block" }} />
+          <span style={{ color: C.textMuted }}>Unplanned task</span>
+        </div>
         {workModes.map((mode) => (
           <div key={mode.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: "0.72rem" }}>
             <span style={{ width: 10, height: 10, borderRadius: 2, background: mode.color, display: "inline-block" }} />
@@ -278,7 +406,39 @@ export default function WeeklyCalendarView() {
         ))}
       </div>
 
+      {unplannedSlots.length > 0 && (
+        <div style={{ marginTop: "1rem", border: `1px solid ${C.border}`, borderRadius: 8, background: C.surface, padding: "0.9rem" }}>
+          <div style={{ fontSize: "0.72rem", color: C.textDim, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.6rem" }}>
+            Unplanned tasks ({unplannedSlots.length})
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {unplannedSlots.map((slot) => (
+              <div key={slot.id} style={{ border: `1px solid ${UNPLANNED_COLOR}40`, background: `${UNPLANNED_COLOR}10`, borderRadius: 6, padding: "0.55rem 0.65rem", cursor: "pointer" }} onClick={() => openEditSlot(slot)}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: slot.description ? 4 : 0 }}>
+                  <span style={{ color: UNPLANNED_COLOR, fontSize: "0.8rem", fontWeight: 600 }}>{slot.title || "Unplanned task"}</span>
+                  <span style={{ color: C.textMuted, fontSize: "0.72rem" }}>
+                    {DAYS[slot.day]} · {slot.startTime ?? formatHourToTime(slot.hour)}–{slot.endTime ?? formatHourToTime(Math.min(slot.hour + 1, 23))}
+                  </span>
+                </div>
+                {slot.description && (
+                  <div style={{ color: C.textMuted, fontSize: "0.75rem", lineHeight: 1.45 }}>{slot.description}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <Modal open={showModal} onClose={() => setShowModal(false)} title={editSlot ? "Edit Slot" : "New Slot"}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: "0.85rem" }}>
+          <div>
+            <label style={labelStyle}>Slot type</label>
+            <select value={sSlotType} onChange={(e) => setSSlotType(e.target.value as ScheduleSlotType)} style={{ ...inputStyle, cursor: "pointer" }}>
+              <option value="planned">Planned</option>
+              <option value="unplanned">Unplanned</option>
+            </select>
+          </div>
+        </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: "0.85rem" }}>
           <div>
             <label style={labelStyle}>Day</label>
@@ -293,40 +453,65 @@ export default function WeeklyCalendarView() {
             </select>
           </div>
         </div>
-        <div style={formRow}>
-          <label style={labelStyle}>Duration: {fmtDuration(sDuration)}</label>
-          <input type="range" min={15} max={360} step={15} value={sDuration} onChange={(e) => setSDuration(Number(e.target.value))} style={{ width: "100%" }} />
-        </div>
-        <div style={formRow}>
-          <label style={labelStyle}>{timeUnitLabel} count</label>
-          <div style={{ display: "flex", gap: 6 }}>
-            {[0, 1, 2, 3].map((n) => (
-              <button key={n} onClick={() => setSUtCount(n)} style={{ background: sUtCount === n ? `${C.accent}25` : C.surfaceAlt, border: `1px solid ${sUtCount === n ? C.accent : C.border}`, color: sUtCount === n ? C.accent : C.textMuted, borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: "0.8rem" }}>
-                {n}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: "0.85rem" }}>
-          <div>
-            <label style={labelStyle}>Work mode</label>
-            <select value={sModeId ?? ""} onChange={(e) => setSModeId(e.target.value || null)} style={{ ...inputStyle, cursor: "pointer" }}>
-              <option value="">None</option>
-              {workModes.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={labelStyle}>Project</label>
-            <select value={sProjectId ?? ""} onChange={(e) => setSProjectId(e.target.value || null)} style={{ ...inputStyle, cursor: "pointer" }}>
-              <option value="">None</option>
-              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </div>
-        </div>
-        <div style={formRow}>
-          <label style={labelStyle}>Note</label>
-          <input value={sNote} onChange={(e) => setSNote(e.target.value)} style={inputStyle} placeholder="What is this slot?" autoFocus />
-        </div>
+        {sSlotType === "planned" ? (
+          <>
+            <div style={formRow}>
+              <label style={labelStyle}>Duration: {fmtDuration(sDuration)}</label>
+              <input type="range" min={15} max={360} step={15} value={sDuration} onChange={(e) => setSDuration(Number(e.target.value))} style={{ width: "100%" }} />
+            </div>
+            <div style={formRow}>
+              <label style={labelStyle}>{timeUnitLabel} count</label>
+              <div style={{ display: "flex", gap: 6 }}>
+                {[0, 1, 2, 3].map((n) => (
+                  <button key={n} onClick={() => setSUtCount(n)} style={{ background: sUtCount === n ? `${C.accent}25` : C.surfaceAlt, border: `1px solid ${sUtCount === n ? C.accent : C.border}`, color: sUtCount === n ? C.accent : C.textMuted, borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: "0.8rem" }}>
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: "0.85rem" }}>
+              <div>
+                <label style={labelStyle}>Work mode</label>
+                <select value={sModeId ?? ""} onChange={(e) => setSModeId(e.target.value || null)} style={{ ...inputStyle, cursor: "pointer" }}>
+                  <option value="">None</option>
+                  {workModes.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Project</label>
+                <select value={sProjectId ?? ""} onChange={(e) => setSProjectId(e.target.value || null)} style={{ ...inputStyle, cursor: "pointer" }}>
+                  <option value="">None</option>
+                  {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={formRow}>
+              <label style={labelStyle}>Note</label>
+              <input value={sNote} onChange={(e) => setSNote(e.target.value)} style={inputStyle} placeholder="What is this slot?" autoFocus />
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={formRow}>
+              <label style={labelStyle}>Title</label>
+              <input value={sTitle} onChange={(e) => setSTitle(e.target.value)} style={inputStyle} placeholder="Unplanned task title" autoFocus />
+            </div>
+            <div style={formRow}>
+              <label style={labelStyle}>Description</label>
+              <input value={sDescription} onChange={(e) => setSDescription(e.target.value)} style={inputStyle} placeholder="Optional context" />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: "0.85rem" }}>
+              <div>
+                <label style={labelStyle}>Start time</label>
+                <input type="time" value={sStartTime} onChange={(e) => setSStartTime(e.target.value)} style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>End time</label>
+                <input type="time" value={sEndTime} onChange={(e) => setSEndTime(e.target.value)} style={inputStyle} />
+              </div>
+            </div>
+          </>
+        )}
         <div style={{ display: "flex", gap: 8, justifyContent: "space-between" }}>
           {editSlot && <button onClick={() => { removeScheduleSlot(editSlot.id); setShowModal(false); }} style={btnDanger}>Delete</button>}
           <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
