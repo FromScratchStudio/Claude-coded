@@ -12,7 +12,9 @@ export function formatHourToTime(hour: number): string {
 }
 
 export function getSlotFallbackEndTime(hour: number, durationMin: number): string {
-  const slotDurationHour = durationMin > 0 ? durationMin / 60 : 1;
-  const fallbackEndHour = Math.min(hour + Math.max(1, Math.ceil(slotDurationHour)), 23);
-  return formatHourToTime(fallbackEndHour);
+  const startMin = Math.max(0, Math.min(23 * 60 + 59, hour * 60));
+  const endMin = Math.min(23 * 60 + 59, startMin + Math.max(1, durationMin));
+  const hh = Math.floor(endMin / 60);
+  const mm = endMin % 60;
+  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
 }

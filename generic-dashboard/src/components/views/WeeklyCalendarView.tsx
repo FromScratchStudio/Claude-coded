@@ -61,6 +61,7 @@ export default function WeeklyCalendarView() {
   const [sDescription, setSDescription] = useState("");
   const [sStartTime, setSStartTime] = useState(() => formatHourToTime(9));
   const [sEndTime, setSEndTime] = useState(() => formatHourToTime(10));
+  const { isMobile } = useBreakpoint();
 
   const monday = useMemo(() => getMondayOfWeek(weekOffset), [weekOffset]);
   const weekKey = useMemo(() => getISOWeekKey(monday), [monday]);
@@ -115,9 +116,18 @@ export default function WeeklyCalendarView() {
     setShowModal(true);
   }
 
+  function getDayForDisplayedWeek(): DayIndex {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffDays = Math.floor((today.getTime() - monday.getTime()) / 86400000);
+    const clamped = Math.max(0, Math.min(6, diffDays));
+    return clamped as DayIndex;
+  }
+
   function openNewUnplannedSlot() {
+    const defaultDay = isMobile ? activeMobileDay : getDayForDisplayedWeek();
     setEditSlot(null);
-    setSDay(activeMobileDay);
+    setSDay(defaultDay);
     setSHour(9);
     setSDuration(defaultSlotDurationMin);
     setSUtCount(0);
@@ -127,8 +137,8 @@ export default function WeeklyCalendarView() {
     setSSlotType("unplanned");
     setSTitle("");
     setSDescription("");
-    setSStartTime("09:00");
-    setSEndTime("10:00");
+    setSStartTime(formatHourToTime(9));
+    setSEndTime(formatHourToTime(10));
     setShowModal(true);
   }
 
@@ -226,8 +236,6 @@ export default function WeeklyCalendarView() {
     const m = min % 60;
     return h === 0 ? `${m}min` : m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, "0")}`;
   };
-
-  const { isMobile } = useBreakpoint();
 
   return (
     <div>
@@ -399,7 +407,12 @@ export default function WeeklyCalendarView() {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {unplannedSlots.map((slot) => (
-              <div key={slot.id} style={{ border: `1px solid ${UNPLANNED_COLOR}40`, background: `${UNPLANNED_COLOR}10`, borderRadius: 6, padding: "0.55rem 0.65rem", cursor: "pointer" }} onClick={() => openEditSlot(slot)}>
+              <button
+                key={slot.id}
+                type="button"
+                onClick={() => openEditSlot(slot)}
+                style={{ border: `1px solid ${UNPLANNED_COLOR}40`, background: `${UNPLANNED_COLOR}10`, borderRadius: 6, padding: "0.55rem 0.65rem", cursor: "pointer", width: "100%", textAlign: "left" }}
+              >
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: slot.description ? 4 : 0 }}>
                   <span style={{ color: UNPLANNED_COLOR, fontSize: "0.8rem", fontWeight: 600 }}>{slot.title || "Unplanned task"}</span>
                   <span style={{ color: C.textMuted, fontSize: "0.72rem" }}>
@@ -409,7 +422,7 @@ export default function WeeklyCalendarView() {
                 {slot.description && (
                   <div style={{ color: C.textMuted, fontSize: "0.75rem", lineHeight: 1.45 }}>{slot.description}</div>
                 )}
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -425,20 +438,29 @@ export default function WeeklyCalendarView() {
             </select>
           </div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: "0.85rem" }}>
-          <div>
+        {sSlotType === "planned" ? (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: "0.85rem" }}>
+            <div>
+              <label style={labelStyle}>Day</label>
+              <select value={sDay} onChange={(e) => setSDay(Number(e.target.value) as DayIndex)} style={{ ...inputStyle, cursor: "pointer" }}>
+                {DAYS.map((d, i) => <option key={d} value={i}>{d}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Hour</label>
+              <select value={sHour} onChange={(e) => setSHour(Number(e.target.value))} style={{ ...inputStyle, cursor: "pointer" }}>
+                {HOURS.map((h) => <option key={h} value={h}>{h}:00</option>)}
+              </select>
+            </div>
+          </div>
+        ) : (
+          <div style={formRow}>
             <label style={labelStyle}>Day</label>
             <select value={sDay} onChange={(e) => setSDay(Number(e.target.value) as DayIndex)} style={{ ...inputStyle, cursor: "pointer" }}>
               {DAYS.map((d, i) => <option key={d} value={i}>{d}</option>)}
             </select>
           </div>
-          <div>
-            <label style={labelStyle}>Hour</label>
-            <select value={sHour} onChange={(e) => setSHour(Number(e.target.value))} style={{ ...inputStyle, cursor: "pointer" }}>
-              {HOURS.map((h) => <option key={h} value={h}>{h}:00</option>)}
-            </select>
-          </div>
-        </div>
+        )}
         {sSlotType === "planned" ? (
           <>
             <div style={formRow}>
