@@ -252,7 +252,7 @@ export default function WeeklyCalendarView() {
             >Clear</button>
             <button
               onClick={() => { setRetroWeekOffset(weekOffset); setActiveView("retrospective"); }}
-              style={{ background: `${C.accent}20`, border: `1px solid ${C.accent}50`, color: C.accent, borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: "0.75rem" }}
+              style={{ background: C.accentLight, border: `1px solid ${C.accentDim}`, color: C.accent, borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: "0.75rem" }}
             >Retro →</button>
             <button
               onClick={openNewUnplannedSlot}

@@ -327,7 +327,7 @@ export default function RetrospectiveView() {
               <>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.75rem" }}>
                   <span style={{ fontSize: "0.82rem", color: C.textMuted }}>{totalUtCount} {appConfig.timeUnitLabel}</span>
-                  <span style={{ fontSize: "0.82rem", color: C.textMuted }}>{fmtDuration(totalPlannedMin)} total</span>
+                  <span style={{ fontSize: "0.82rem", color: C.textMuted }}>{fmtDuration(totalPlannedMin)} planned</span>
                 </div>
                 <div style={{ marginBottom: "0.75rem", padding: "0.55rem 0.65rem", border: `1px solid ${C.border}`, borderRadius: 6, background: C.surfaceAlt }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: "0.76rem", color: C.textMuted }}>
