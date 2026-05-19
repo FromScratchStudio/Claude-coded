@@ -39,6 +39,9 @@ export default function TopBar() {
   };
 
   const currentMode = operationalModes.find((m) => m.id === operationalMode);
+  const handleExportPdf = () => {
+    window.print();
+  };
 
   return (
     <header
@@ -73,32 +76,51 @@ export default function TopBar() {
         <span style={{ fontSize: "0.75rem", color: C.textDim }}>
           {appConfig.appTagline}
         </span>
-        {currentMode && (
-          <span
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={handleExportPdf}
             style={{
-              marginLeft: "auto",
+              background: `${C.accent}20`,
+              color: C.accent,
+              border: `1px solid ${C.accent}55`,
+              borderRadius: 6,
+              padding: "3px 10px",
               fontSize: "0.72rem",
-              color: currentMode.color,
-              border: `1px solid ${currentMode.color}50`,
-              borderRadius: 4,
-              padding: "2px 8px",
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
+              fontWeight: 600,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
             }}
+            title="Print this page or save it as PDF"
+            aria-label="Print this page or save it as PDF"
           >
+            🖨 Export PDF
+          </button>
+          {currentMode && (
             <span
               style={{
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                background: currentMode.color,
-                display: "inline-block",
+                fontSize: "0.72rem",
+                color: currentMode.color,
+                border: `1px solid ${currentMode.color}50`,
+                borderRadius: 4,
+                padding: "2px 8px",
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
               }}
-            />
-            {currentMode.label}
-          </span>
-        )}
+            >
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: currentMode.color,
+                  display: "inline-block",
+                }}
+              />
+              {currentMode.label}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Nav row */}
