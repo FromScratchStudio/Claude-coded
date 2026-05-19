@@ -6,6 +6,7 @@ import { SectionTitle } from "../ui/SectionTitle";
 import { Card } from "../ui/Card";
 import { ProgressBar } from "../ui/ProgressBar";
 import { labelStyle, formRow, btnPrimary, btnSecondary } from "../ui/Modal";
+import { formatHourToTime, getSlotFallbackEndTime } from "../../utils/scheduleSlot";
 
 // ─── Week helpers (same ISO format as WeeklyCalendarView) ─────────────────────
 
@@ -347,9 +348,9 @@ export default function RetrospectiveView() {
                         <div key={slot.id} style={{ border: `1px solid ${C.orange}40`, background: `${C.orange}10`, borderRadius: 6, padding: "0.45rem 0.55rem" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: slot.description ? 3 : 0 }}>
                             <span style={{ fontSize: "0.74rem", color: C.orange, fontWeight: 600 }}>{slot.title || "Unplanned task"}</span>
-                            <span style={{ fontSize: "0.7rem", color: C.textMuted }}>
-                              {DAYS[slot.day]} · {slot.startTime ?? `${String(slot.hour).padStart(2, "0")}:00`}–{slot.endTime ?? `${String(Math.min(slot.hour + 1, 23)).padStart(2, "0")}:00`}
-                            </span>
+                              <span style={{ fontSize: "0.7rem", color: C.textMuted }}>
+                              {DAYS[slot.day]} · {slot.startTime ?? formatHourToTime(slot.hour)}–{slot.endTime ?? getSlotFallbackEndTime(slot.hour, slot.durationMin)}
+                              </span>
                           </div>
                           {slot.description && (
                             <div style={{ fontSize: "0.72rem", color: C.textMuted }}>{slot.description}</div>

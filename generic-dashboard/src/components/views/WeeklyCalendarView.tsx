@@ -5,6 +5,7 @@ import { useBreakpoint } from "../../hooks/useBreakpoint";
 import { SectionTitle } from "../ui/SectionTitle";
 import { Modal, inputStyle, labelStyle, formRow, btnPrimary, btnSecondary, btnDanger } from "../ui/Modal";
 import type { DayIndex, ScheduleSlot, ScheduleSlotType } from "../../types";
+import { formatHourToTime, getSlotFallbackEndTime, parseTimeToMinutes } from "../../utils/scheduleSlot";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const HOURS = Array.from({ length: 17 }, (_, i) => i + 6);
@@ -58,8 +59,8 @@ export default function WeeklyCalendarView() {
   const [sSlotType, setSSlotType] = useState<ScheduleSlotType>("planned");
   const [sTitle, setSTitle] = useState("");
   const [sDescription, setSDescription] = useState("");
-  const [sStartTime, setSStartTime] = useState("09:00");
-  const [sEndTime, setSEndTime] = useState("10:00");
+  const [sStartTime, setSStartTime] = useState(() => formatHourToTime(9));
+  const [sEndTime, setSEndTime] = useState(() => formatHourToTime(10));
 
   const monday = useMemo(() => getMondayOfWeek(weekOffset), [weekOffset]);
   const weekKey = useMemo(() => getISOWeekKey(monday), [monday]);
@@ -84,19 +85,6 @@ export default function WeeklyCalendarView() {
   );
   const weeklyTarget = appConfig.weeklyTimeUnitTarget;
   const { timeUnitLabel } = appConfig;
-
-  function parseTimeToMinutes(value: string): number | null {
-    const match = value.match(/^(\d{2}):(\d{2})$/);
-    if (!match) return null;
-    const hour = Number(match[1]);
-    const minute = Number(match[2]);
-    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
-    return hour * 60 + minute;
-  }
-
-  function formatHourToTime(hour: number): string {
-    return `${String(hour).padStart(2, "0")}:00`;
-  }
 
   function getSlotLabel(slot: ScheduleSlot, slotModeName?: string): string {
     if ((slot.slotType ?? "planned") === "unplanned") {
@@ -146,8 +134,6 @@ export default function WeeklyCalendarView() {
 
   function openEditSlot(slot: ScheduleSlot) {
     const startTime = slot.startTime ?? formatHourToTime(slot.hour);
-    const slotDurationHour = slot.durationMin > 0 ? slot.durationMin / 60 : 1;
-    const fallbackEndHour = Math.min(slot.hour + Math.max(1, Math.ceil(slotDurationHour)), 23);
     setEditSlot(slot);
     setSDay(slot.day);
     setSHour(slot.hour);
@@ -160,7 +146,7 @@ export default function WeeklyCalendarView() {
     setSTitle(slot.title ?? "");
     setSDescription(slot.description ?? "");
     setSStartTime(startTime);
-    setSEndTime(slot.endTime ?? formatHourToTime(fallbackEndHour));
+    setSEndTime(slot.endTime ?? getSlotFallbackEndTime(slot.hour, slot.durationMin));
     setShowModal(true);
   }
 
@@ -417,7 +403,7 @@ export default function WeeklyCalendarView() {
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: slot.description ? 4 : 0 }}>
                   <span style={{ color: UNPLANNED_COLOR, fontSize: "0.8rem", fontWeight: 600 }}>{slot.title || "Unplanned task"}</span>
                   <span style={{ color: C.textMuted, fontSize: "0.72rem" }}>
-                    {DAYS[slot.day]} · {slot.startTime ?? formatHourToTime(slot.hour)}–{slot.endTime ?? formatHourToTime(Math.min(slot.hour + 1, 23))}
+                    {DAYS[slot.day]} · {slot.startTime ?? formatHourToTime(slot.hour)}–{slot.endTime ?? getSlotFallbackEndTime(slot.hour, slot.durationMin)}
                   </span>
                 </div>
                 {slot.description && (
