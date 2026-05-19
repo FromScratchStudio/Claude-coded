@@ -129,6 +129,7 @@ export default function RetrospectiveView() {
   const removeWeeklyRetro = useStore((s) => s.removeWeeklyRetro);
   const scheduleSlots = useStore((s) => s.scheduleSlots);
   const workModes = useStore((s) => s.workModes);
+  const defaultSlotDurationMin = useStore((s) => s.defaultSlotDurationMin);
   const retroWeekOffset = useStore((s) => s.retroWeekOffset);
   const setRetroWeekOffset = useStore((s) => s.setRetroWeekOffset);
   const setActiveView = useStore((s) => s.setActiveView);
@@ -192,6 +193,11 @@ export default function RetrospectiveView() {
 
   const totalUtCount = plannedWeekSlots.reduce((acc, s) => acc + s.utCount, 0);
   const totalPlannedMin = plannedWeekSlots.reduce((acc, s) => acc + s.durationMin, 0);
+  const totalUnplannedMin = unplannedSlots.reduce((acc, s) => acc + s.durationMin, 0);
+  const totalCalendarMin = totalPlannedMin + totalUnplannedMin;
+  const unplannedShareOfCalendar = totalCalendarMin > 0 ? Math.round((totalUnplannedMin / totalCalendarMin) * 100) : 0;
+  const unplannedUtEquivalent = defaultSlotDurationMin > 0 ? totalUnplannedMin / defaultSlotDurationMin : 0;
+  const unplannedVsUtPct = totalUtCount > 0 ? Math.round((unplannedUtEquivalent / totalUtCount) * 100) : 0;
 
   const slotsByMode = useMemo(() => {
     const map: Record<string, number> = {};
@@ -319,6 +325,21 @@ export default function RetrospectiveView() {
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.75rem" }}>
                   <span style={{ fontSize: "0.82rem", color: C.textMuted }}>{totalUtCount} {appConfig.timeUnitLabel}</span>
                   <span style={{ fontSize: "0.82rem", color: C.textMuted }}>{fmtDuration(totalPlannedMin)} total</span>
+                </div>
+                <div style={{ marginBottom: "0.75rem", padding: "0.55rem 0.65rem", border: `1px solid ${C.border}`, borderRadius: 6, background: C.surfaceAlt }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: "0.76rem", color: C.textMuted }}>
+                    <span>Unplanned volume</span>
+                    <span style={{ color: C.orange, fontWeight: 600 }}>{fmtDuration(totalUnplannedMin)}</span>
+                  </div>
+                  <div style={{ marginTop: 4, fontSize: "0.72rem", color: C.textDim, lineHeight: 1.4 }}>
+                    {totalUtCount > 0
+                      ? `${unplannedUtEquivalent.toFixed(1)} ${appConfig.timeUnitLabel} eq (${unplannedVsUtPct}% of planned ${appConfig.timeUnitLabel})`
+                      : `0 ${appConfig.timeUnitLabel} planned this week`}
+                    {" · "}
+                    {totalCalendarMin > 0
+                      ? `${unplannedShareOfCalendar}% of recorded calendar time (${fmtDuration(totalCalendarMin)})`
+                      : "No recorded calendar time"}
+                  </div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   {Object.entries(slotsByMode).map(([modeId, minutes]) => {
