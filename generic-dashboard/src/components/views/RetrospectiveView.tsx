@@ -333,11 +333,11 @@ export default function RetrospectiveView() {
                   </div>
                   <div style={{ marginTop: 4, fontSize: "0.72rem", color: C.textDim, lineHeight: 1.4 }}>
                     {totalUtCount > 0
-                      ? `${unplannedUtEquivalent.toFixed(1)} ${appConfig.timeUnitLabel} eq (${unplannedVsUtPct}% of planned ${appConfig.timeUnitLabel})`
+                      ? `${unplannedUtEquivalent.toFixed(1)} ${appConfig.timeUnitLabel} equivalent (${unplannedVsUtPct}% of planned ${appConfig.timeUnitLabel})`
                       : `0 ${appConfig.timeUnitLabel} planned this week`}
                     {" · "}
                     {totalCalendarMin > 0
-                      ? `${unplannedShareOfCalendar}% of recorded calendar time (${fmtDuration(totalCalendarMin)})`
+                      ? `${unplannedShareOfCalendar}% of recorded calendar time (total: ${fmtDuration(totalCalendarMin)})`
                       : "No recorded calendar time"}
                   </div>
                 </div>
