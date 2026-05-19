@@ -81,9 +81,9 @@ export default function TopBar() {
             type="button"
             onClick={handlePrint}
             style={{
-              background: `${C.accent}20`,
+              background: C.accentDim,
               color: C.accent,
-              border: `1px solid ${C.accent}55`,
+              border: `1px solid ${C.accentLight}`,
               borderRadius: 6,
               padding: "3px 10px",
               fontSize: "0.72rem",
