@@ -197,7 +197,10 @@ export default function RetrospectiveView() {
   const totalCalendarMin = totalPlannedMin + totalUnplannedMin;
   const unplannedShareOfCalendar = totalCalendarMin > 0 ? Math.round((totalUnplannedMin / totalCalendarMin) * 100) : 0;
   const unplannedUtEquivalent = defaultSlotDurationMin > 0 ? totalUnplannedMin / defaultSlotDurationMin : 0;
-  const unplannedVsUtPct = totalUtCount > 0 ? Math.round((unplannedUtEquivalent / totalUtCount) * 100) : 0;
+  const unplannedVsPlannedUtPct = totalUtCount > 0 ? Math.round((unplannedUtEquivalent / totalUtCount) * 100) : 0;
+  const unplannedUtEquivalentLabel = unplannedUtEquivalent > 0 && unplannedUtEquivalent < 0.1
+    ? "< 0.1"
+    : unplannedUtEquivalent.toFixed(1);
 
   const slotsByMode = useMemo(() => {
     const map: Record<string, number> = {};
@@ -333,7 +336,7 @@ export default function RetrospectiveView() {
                   </div>
                   <div style={{ marginTop: 4, fontSize: "0.72rem", color: C.textDim, lineHeight: 1.4 }}>
                     {totalUtCount > 0
-                      ? `${unplannedUtEquivalent.toFixed(1)} ${appConfig.timeUnitLabel} equivalent (${unplannedVsUtPct}% of planned ${appConfig.timeUnitLabel})`
+                      ? `${unplannedUtEquivalentLabel} ${appConfig.timeUnitLabel} equivalent (${unplannedVsPlannedUtPct}% of planned ${appConfig.timeUnitLabel})`
                       : `0 ${appConfig.timeUnitLabel} planned this week`}
                     {" · "}
                     {totalCalendarMin > 0
