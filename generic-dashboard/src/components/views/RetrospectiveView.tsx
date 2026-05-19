@@ -6,6 +6,7 @@ import { SectionTitle } from "../ui/SectionTitle";
 import { Card } from "../ui/Card";
 import { ProgressBar } from "../ui/ProgressBar";
 import { labelStyle, formRow, btnPrimary, btnSecondary } from "../ui/Modal";
+import { formatHourToTime, getSlotFallbackEndTime } from "../../utils/scheduleSlot";
 
 // ─── Week helpers (same ISO format as WeeklyCalendarView) ─────────────────────
 
@@ -35,6 +36,7 @@ function addDays(date: Date, days: number): Date {
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 function fmtDate(date: Date): string {
   return `${date.getDate()} ${MONTHS[date.getMonth()]}`;
 }
@@ -52,6 +54,10 @@ function fmtDuration(min: number): string {
   const h = Math.floor(min / 60);
   const m = min % 60;
   return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, "0")}`;
+}
+
+function isUnplannedSlot(slot: { slotType?: string }): boolean {
+  return (slot.slotType ?? "planned") === "unplanned";
 }
 
 /** Returns the Monday (UTC midnight) for the given ISO year+week. */
@@ -123,6 +129,7 @@ export default function RetrospectiveView() {
   const removeWeeklyRetro = useStore((s) => s.removeWeeklyRetro);
   const scheduleSlots = useStore((s) => s.scheduleSlots);
   const workModes = useStore((s) => s.workModes);
+  const defaultSlotDurationMin = useStore((s) => s.defaultSlotDurationMin);
   const retroWeekOffset = useStore((s) => s.retroWeekOffset);
   const setRetroWeekOffset = useStore((s) => s.setRetroWeekOffset);
   const setActiveView = useStore((s) => s.setActiveView);
@@ -167,17 +174,42 @@ export default function RetrospectiveView() {
     [scheduleSlots, weekKey]
   );
 
-  const totalUtCount = weekSlots.reduce((acc, s) => acc + s.utCount, 0);
-  const totalPlannedMin = weekSlots.reduce((acc, s) => acc + s.durationMin, 0);
+  const plannedWeekSlots = useMemo(
+    () => weekSlots.filter((slot) => !isUnplannedSlot(slot)),
+    [weekSlots]
+  );
+  const unplannedSlots = useMemo(
+    () =>
+      weekSlots
+        .filter((slot) => isUnplannedSlot(slot))
+        .sort((a, b) => {
+          if (a.day !== b.day) return a.day - b.day;
+          const aStart = a.startTime ?? `${String(a.hour).padStart(2, "0")}:00`;
+          const bStart = b.startTime ?? `${String(b.hour).padStart(2, "0")}:00`;
+          return aStart.localeCompare(bStart);
+        }),
+    [weekSlots]
+  );
+
+  const totalUtCount = plannedWeekSlots.reduce((acc, s) => acc + s.utCount, 0);
+  const totalPlannedMin = plannedWeekSlots.reduce((acc, s) => acc + s.durationMin, 0);
+  const totalUnplannedMin = unplannedSlots.reduce((acc, s) => acc + s.durationMin, 0);
+  const totalCalendarMin = totalPlannedMin + totalUnplannedMin;
+  const unplannedShareOfCalendar = totalCalendarMin > 0 ? Math.round((totalUnplannedMin / totalCalendarMin) * 100) : 0;
+  const unplannedUtEquivalent = defaultSlotDurationMin > 0 ? totalUnplannedMin / defaultSlotDurationMin : 0;
+  const unplannedVsPlannedUtPct = totalUtCount > 0 ? Math.round((unplannedUtEquivalent / totalUtCount) * 100) : 0;
+  const unplannedUtEquivalentLabel = unplannedUtEquivalent > 0 && unplannedUtEquivalent < 0.1
+    ? "< 0.1"
+    : unplannedUtEquivalent.toFixed(1);
 
   const slotsByMode = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const s of weekSlots) {
+    for (const s of plannedWeekSlots) {
       const key = s.workModeId ?? "__none__";
       map[key] = (map[key] ?? 0) + s.durationMin;
     }
     return map;
-  }, [weekSlots]);
+  }, [plannedWeekSlots]);
 
   const sortedRetros = useMemo(
     () => [...weeklyRetros].sort((a, b) => b.weekKey.localeCompare(a.weekKey)),
@@ -295,7 +327,22 @@ export default function RetrospectiveView() {
               <>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.75rem" }}>
                   <span style={{ fontSize: "0.82rem", color: C.textMuted }}>{totalUtCount} {appConfig.timeUnitLabel}</span>
-                  <span style={{ fontSize: "0.82rem", color: C.textMuted }}>{fmtDuration(totalPlannedMin)} total</span>
+                  <span style={{ fontSize: "0.82rem", color: C.textMuted }}>{fmtDuration(totalPlannedMin)} planned</span>
+                </div>
+                <div style={{ marginBottom: "0.75rem", padding: "0.55rem 0.65rem", border: `1px solid ${C.border}`, borderRadius: 6, background: C.surfaceAlt }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: "0.76rem", color: C.textMuted }}>
+                    <span>Unplanned volume</span>
+                    <span style={{ color: C.orange, fontWeight: 600 }}>{fmtDuration(totalUnplannedMin)}</span>
+                  </div>
+                  <div style={{ marginTop: 4, fontSize: "0.72rem", color: C.textDim, lineHeight: 1.4 }}>
+                    {totalUtCount > 0
+                      ? `${unplannedUtEquivalentLabel} ${appConfig.timeUnitLabel} equivalent (${unplannedVsPlannedUtPct}% of planned ${appConfig.timeUnitLabel})`
+                      : `0 ${appConfig.timeUnitLabel} planned this week`}
+                    {" · "}
+                    {totalCalendarMin > 0
+                      ? `${unplannedShareOfCalendar}% of recorded calendar time (total: ${fmtDuration(totalCalendarMin)})`
+                      : "No recorded calendar time"}
+                  </div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   {Object.entries(slotsByMode).map(([modeId, minutes]) => {
@@ -315,6 +362,28 @@ export default function RetrospectiveView() {
                     );
                   })}
                 </div>
+                {unplannedSlots.length > 0 && (
+                  <div style={{ marginTop: "0.85rem", borderTop: `1px solid ${C.border}`, paddingTop: "0.75rem" }}>
+                    <div style={{ fontSize: "0.72rem", color: C.textDim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.5rem" }}>
+                      Unplanned tasks ({unplannedSlots.length})
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                      {unplannedSlots.map((slot) => (
+                        <div key={slot.id} style={{ border: `1px solid ${C.orange}40`, background: `${C.orange}10`, borderRadius: 6, padding: "0.45rem 0.55rem" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: slot.description ? 3 : 0 }}>
+                            <span style={{ fontSize: "0.74rem", color: C.orange, fontWeight: 600 }}>{slot.title || "Unplanned task"}</span>
+                            <span style={{ fontSize: "0.7rem", color: C.textMuted }}>
+                              {DAYS[slot.day]} · {slot.startTime ?? formatHourToTime(slot.hour)}–{slot.endTime ?? getSlotFallbackEndTime(slot.hour, slot.durationMin)}
+                            </span>
+                          </div>
+                          {slot.description && (
+                            <div style={{ fontSize: "0.72rem", color: C.textMuted }}>{slot.description}</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </Card>
