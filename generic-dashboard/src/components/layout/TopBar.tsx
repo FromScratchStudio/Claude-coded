@@ -39,7 +39,7 @@ export default function TopBar() {
   };
 
   const currentMode = operationalModes.find((m) => m.id === operationalMode);
-  const handleExportPdf = () => {
+  const handlePrint = () => {
     window.print();
   };
 
@@ -78,7 +78,8 @@ export default function TopBar() {
         </span>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
           <button
-            onClick={handleExportPdf}
+            type="button"
+            onClick={handlePrint}
             style={{
               background: `${C.accent}20`,
               color: C.accent,
@@ -93,7 +94,7 @@ export default function TopBar() {
             title="Print this page or save it as PDF"
             aria-label="Print this page or save it as PDF"
           >
-            🖨 Export PDF
+            Print / Export PDF
           </button>
           {currentMode && (
             <span
