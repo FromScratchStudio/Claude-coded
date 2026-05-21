@@ -11,6 +11,7 @@ const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const HOURS = Array.from({ length: 17 }, (_, i) => i + 6);
 const SLOT_HEIGHT = 36;
 const UNPLANNED_COLOR = C.orange;
+const DEFAULT_EFFECTIVE_PCT = 100;
 
 function getISOWeekKey(date: Date): string {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -61,6 +62,7 @@ export default function WeeklyCalendarView() {
   const [sDescription, setSDescription] = useState("");
   const [sStartTime, setSStartTime] = useState(() => formatHourToTime(9));
   const [sEndTime, setSEndTime] = useState(() => formatHourToTime(10));
+  const [sEffectivePct, setSEffectivePct] = useState(DEFAULT_EFFECTIVE_PCT);
   const { isMobile } = useBreakpoint();
 
   const monday = useMemo(() => getMondayOfWeek(weekOffset), [weekOffset]);
@@ -99,6 +101,29 @@ export default function WeeklyCalendarView() {
     return slotModeColor ?? C.accent;
   }
 
+  function getEffectivePct(slot: ScheduleSlot): number {
+    const value = slot.effectivePct ?? DEFAULT_EFFECTIVE_PCT;
+    return Math.max(0, Math.min(100, value));
+  }
+
+  function renderMiniDonut(pct: number, color: string) {
+    return (
+      <span
+        aria-label={`Slot completion ${pct}%`}
+        title={`Completion ${pct}%`}
+        style={{
+          width: 12,
+          height: 12,
+          borderRadius: "50%",
+          background: `conic-gradient(${color} ${pct}%, ${C.surfaceAlt} ${pct}% 100%)`,
+          border: `1px solid ${C.border}`,
+          display: "inline-block",
+          flexShrink: 0,
+        }}
+      />
+    );
+  }
+
   function openNewSlot(day: DayIndex, hour: number) {
     setEditSlot(null);
     setSDay(day);
@@ -113,6 +138,7 @@ export default function WeeklyCalendarView() {
     setSDescription("");
     setSStartTime(formatHourToTime(hour));
     setSEndTime(formatHourToTime(Math.min(hour + 1, 23)));
+    setSEffectivePct(DEFAULT_EFFECTIVE_PCT);
     setShowModal(true);
   }
 
@@ -139,6 +165,7 @@ export default function WeeklyCalendarView() {
     setSDescription("");
     setSStartTime(formatHourToTime(9));
     setSEndTime(formatHourToTime(10));
+    setSEffectivePct(DEFAULT_EFFECTIVE_PCT);
     setShowModal(true);
   }
 
@@ -157,6 +184,7 @@ export default function WeeklyCalendarView() {
     setSDescription(slot.description ?? "");
     setSStartTime(startTime);
     setSEndTime(slot.endTime ?? getSlotFallbackEndTime(slot.hour, slot.durationMin));
+    setSEffectivePct(getEffectivePct(slot));
     setShowModal(true);
   }
 
@@ -171,6 +199,7 @@ export default function WeeklyCalendarView() {
     let slotDescription: string | undefined;
     let slotStartTime: string | undefined;
     let slotEndTime: string | undefined;
+    let slotEffectivePct: number | undefined = sEffectivePct;
 
     if (sSlotType === "unplanned") {
       const title = sTitle.trim();
@@ -194,6 +223,7 @@ export default function WeeklyCalendarView() {
       slotDescription = sDescription.trim();
       slotStartTime = sStartTime;
       slotEndTime = sEndTime;
+      slotEffectivePct = undefined;
     }
 
     if (editSlot) {
@@ -210,6 +240,7 @@ export default function WeeklyCalendarView() {
         description: slotDescription,
         startTime: slotStartTime,
         endTime: slotEndTime,
+        effectivePct: slotEffectivePct,
       });
     } else {
       addScheduleSlot({
@@ -226,6 +257,7 @@ export default function WeeklyCalendarView() {
         description: slotDescription,
         startTime: slotStartTime,
         endTime: slotEndTime,
+        effectivePct: slotEffectivePct,
       });
     }
     setShowModal(false);
@@ -319,15 +351,38 @@ export default function WeeklyCalendarView() {
                       const slotMode = workModes.find((m) => m.id === slot.workModeId);
                       const color = getSlotColor(slot, slotMode?.color);
                       const label = getSlotLabel(slot, slotMode?.name);
+                      const isPlanned = (slot.slotType ?? "planned") === "planned";
+                      const effectivePct = getEffectivePct(slot);
                       return (
                         <div
                           key={slot.id}
                           onClick={(e) => { e.stopPropagation(); openEditSlot(slot); }}
                           style={{ background: `${color}25`, border: `1px solid ${color}60`, borderRadius: 4, padding: "3px 8px", fontSize: "0.75rem", color, cursor: "pointer" }}
                         >
-                          {slot.utCount > 0 && <span style={{ marginRight: 4 }}>&#9670;</span>}
-                          {label}
-                          <span style={{ marginLeft: 4, opacity: 0.6, fontSize: "0.68rem" }}>{fmtDuration(slot.durationMin)}</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                            {isPlanned && renderMiniDonut(effectivePct, color)}
+                            {slot.utCount > 0 && <span style={{ marginRight: 1 }}>&#9670;</span>}
+                            <span>{label}</span>
+                            <span style={{ marginLeft: "auto", opacity: 0.6, fontSize: "0.68rem" }}>{fmtDuration(slot.durationMin)}</span>
+                          </div>
+                          {isPlanned && (
+                            <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
+                              <input
+                                type="range"
+                                min={0}
+                                max={100}
+                                step={5}
+                                value={effectivePct}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  updateScheduleSlot(slot.id, { effectivePct: Number(e.target.value) });
+                                }}
+                                style={{ width: "100%", accentColor: color, cursor: "pointer" }}
+                              />
+                              <span style={{ fontSize: "0.64rem", color: C.textMuted, minWidth: 30, textAlign: "right" }}>{effectivePct}%</span>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -368,14 +423,34 @@ export default function WeeklyCalendarView() {
                     const color = getSlotColor(slot, slotMode?.color);
                     const label = getSlotLabel(slot, slotMode?.name);
                     const heightPx = Math.round((slot.durationMin / 60) * SLOT_HEIGHT);
+                    const isPlanned = (slot.slotType ?? "planned") === "planned";
+                    const effectivePct = getEffectivePct(slot);
                     return (
                       <div
                         key={slot.id}
                         onClick={(e) => { e.stopPropagation(); openEditSlot(slot); }}
-                        style={{ position: "absolute", top: 1, left: 2, right: 2, height: Math.max(heightPx - 2, 20), background: `${color}25`, border: `1px solid ${color}60`, borderRadius: 4, padding: "2px 4px", fontSize: "0.65rem", color, overflow: "hidden", cursor: "pointer", zIndex: 1 }}
+                        style={{ position: "absolute", top: 1, left: 2, right: 2, height: Math.max(heightPx - 2, isPlanned ? 34 : 20), background: `${color}25`, border: `1px solid ${color}60`, borderRadius: 4, padding: "2px 4px", fontSize: "0.65rem", color, overflow: "hidden", cursor: "pointer", zIndex: 1 }}
                       >
-                        {slot.utCount > 0 && <span style={{ marginRight: 2 }}>&#9670;</span>}
-                        {label}
+                        <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                          {isPlanned && renderMiniDonut(effectivePct, color)}
+                          {slot.utCount > 0 && <span style={{ marginRight: 1 }}>&#9670;</span>}
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+                        </div>
+                        {isPlanned && (
+                          <input
+                            type="range"
+                            min={0}
+                            max={100}
+                            step={5}
+                            value={effectivePct}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              updateScheduleSlot(slot.id, { effectivePct: Number(e.target.value) });
+                            }}
+                            style={{ width: "100%", marginTop: 2, accentColor: color, cursor: "pointer" }}
+                          />
+                        )}
                       </div>
                     );
                   })}
@@ -496,6 +571,10 @@ export default function WeeklyCalendarView() {
             <div style={formRow}>
               <label style={labelStyle}>Note</label>
               <input value={sNote} onChange={(e) => setSNote(e.target.value)} style={inputStyle} placeholder="What is this slot?" autoFocus />
+            </div>
+            <div style={formRow}>
+              <label style={labelStyle}>Effective usage: {sEffectivePct}%</label>
+              <input type="range" min={0} max={100} step={5} value={sEffectivePct} onChange={(e) => setSEffectivePct(Number(e.target.value))} style={{ width: "100%", accentColor: C.accent, cursor: "pointer" }} />
             </div>
           </>
         ) : (

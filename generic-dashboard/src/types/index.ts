@@ -361,6 +361,7 @@ export interface ScheduleSlot {
   description?: string;
   startTime?: string;
   endTime?: string;
+  effectivePct?: number;
 }
 
 // ─── Google Drive ─────────────────────────────────────────────────────────────
