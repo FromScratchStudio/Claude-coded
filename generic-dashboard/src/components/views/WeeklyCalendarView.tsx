@@ -125,6 +125,33 @@ export default function WeeklyCalendarView() {
     );
   }
 
+  function renderEffectiveCompletionControl(slot: ScheduleSlot, color: string, showValue: boolean) {
+    const effectivePct = getEffectivePct(slot);
+    return (
+      <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={5}
+          aria-label="Adjust effective completion percentage"
+          value={effectivePct}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => {
+            e.stopPropagation();
+            updateScheduleSlot(slot.id, { effectivePct: Number(e.target.value) });
+          }}
+          style={{ width: "100%", accentColor: color, cursor: "pointer" }}
+        />
+        {showValue && (
+          <span style={{ fontSize: "0.64rem", color: C.textMuted, minWidth: 30, textAlign: "right" }}>
+            {effectivePct}%
+          </span>
+        )}
+      </div>
+    );
+  }
+
   function openNewSlot(day: DayIndex, hour: number) {
     setEditSlot(null);
     setSDay(day);
@@ -366,23 +393,7 @@ export default function WeeklyCalendarView() {
                             <span style={{ marginLeft: "auto", opacity: 0.6, fontSize: "0.68rem" }}>{fmtDuration(slot.durationMin)}</span>
                           </div>
                           {isPlanned && (
-                            <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
-                              <input
-                                type="range"
-                                min={0}
-                                max={100}
-                                step={5}
-                                aria-label="Adjust effective completion percentage"
-                                value={effectivePct}
-                                onClick={(e) => e.stopPropagation()}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  updateScheduleSlot(slot.id, { effectivePct: Number(e.target.value) });
-                                }}
-                                style={{ width: "100%", accentColor: color, cursor: "pointer" }}
-                              />
-                              <span style={{ fontSize: "0.64rem", color: C.textMuted, minWidth: 30, textAlign: "right" }}>{effectivePct}%</span>
-                            </div>
+                            renderEffectiveCompletionControl(slot, color, true)
                           )}
                         </div>
                       );
@@ -437,22 +448,7 @@ export default function WeeklyCalendarView() {
                           {slot.utCount > 0 && <span style={{ marginRight: 1 }}>&#9670;</span>}
                           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
                         </div>
-                        {isPlanned && (
-                          <input
-                            type="range"
-                            min={0}
-                            max={100}
-                            step={5}
-                            aria-label="Adjust effective completion percentage"
-                            value={effectivePct}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              updateScheduleSlot(slot.id, { effectivePct: Number(e.target.value) });
-                            }}
-                            style={{ width: "100%", marginTop: 2, accentColor: color, cursor: "pointer" }}
-                          />
-                        )}
+                        {isPlanned && renderEffectiveCompletionControl(slot, color, false)}
                       </div>
                     );
                   })}
@@ -575,7 +571,7 @@ export default function WeeklyCalendarView() {
               <input value={sNote} onChange={(e) => setSNote(e.target.value)} style={inputStyle} placeholder="What is this slot?" autoFocus />
             </div>
             <div style={formRow}>
-              <label style={labelStyle}>Effective usage: {sEffectivePct}%</label>
+              <label style={labelStyle}>Effective completion: {sEffectivePct}%</label>
               <input type="range" min={0} max={100} step={5} aria-label="Adjust effective completion percentage" value={sEffectivePct} onChange={(e) => setSEffectivePct(Number(e.target.value))} style={{ width: "100%", accentColor: C.accent, cursor: "pointer" }} />
             </div>
           </>
