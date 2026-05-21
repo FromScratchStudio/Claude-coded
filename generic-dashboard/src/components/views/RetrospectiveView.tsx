@@ -37,6 +37,17 @@ function addDays(date: Date, days: number): Date {
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DEFAULT_EFFECTIVE_PCT = 100;
+
+function getEffectivePct(value?: number): number {
+  const safeValue = typeof value === "number" && Number.isFinite(value) ? value : DEFAULT_EFFECTIVE_PCT;
+  return Math.max(0, Math.min(100, safeValue));
+}
+
+function getEffectiveStars(value: number): number {
+  return Math.max(0, Math.min(5, Math.round(value / 20)));
+}
+
 function fmtDate(date: Date): string {
   return `${date.getDate()} ${MONTHS[date.getMonth()]}`;
 }
@@ -193,6 +204,15 @@ export default function RetrospectiveView() {
 
   const totalUtCount = plannedWeekSlots.reduce((acc, s) => acc + s.utCount, 0);
   const totalPlannedMin = plannedWeekSlots.reduce((acc, s) => acc + s.durationMin, 0);
+  const effectivePlannedMin = plannedWeekSlots.reduce(
+    (acc, s) => acc + s.durationMin * (getEffectivePct(s.effectivePct) / 100),
+    0
+  );
+  const effectiveCompletionPct = totalPlannedMin > 0
+    ? Math.round((effectivePlannedMin / totalPlannedMin) * 100)
+    : 0;
+  const effectiveStars = getEffectiveStars(effectiveCompletionPct);
+  const effectiveStarsLabel = `${"★".repeat(effectiveStars)}${"☆".repeat(5 - effectiveStars)}`;
   const totalUnplannedMin = unplannedSlots.reduce((acc, s) => acc + s.durationMin, 0);
   const totalCalendarMin = totalPlannedMin + totalUnplannedMin;
   const unplannedShareOfCalendar = totalCalendarMin > 0 ? Math.round((totalUnplannedMin / totalCalendarMin) * 100) : 0;
@@ -328,6 +348,16 @@ export default function RetrospectiveView() {
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.75rem" }}>
                   <span style={{ fontSize: "0.82rem", color: C.textMuted }}>{totalUtCount} {appConfig.timeUnitLabel}</span>
                   <span style={{ fontSize: "0.82rem", color: C.textMuted }}>{fmtDuration(totalPlannedMin)} planned</span>
+                </div>
+                <div style={{ marginBottom: "0.75rem", padding: "0.5rem 0.65rem", border: `1px solid ${C.border}`, borderRadius: 6, background: C.surfaceAlt }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                    <span style={{ fontSize: "0.76rem", color: C.textMuted }}>Effective completion</span>
+                    <span style={{ fontSize: "0.76rem", color: C.accent, fontWeight: 700 }}>{effectiveCompletionPct}%</span>
+                  </div>
+                  <div style={{ marginTop: 3, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: "0.9rem", color: C.amber, letterSpacing: "0.04em" }}>{effectiveStarsLabel}</span>
+                    <span style={{ fontSize: "0.7rem", color: C.textDim }}>based on slot-level effective %</span>
+                  </div>
                 </div>
                 <div style={{ marginBottom: "0.75rem", padding: "0.55rem 0.65rem", border: `1px solid ${C.border}`, borderRadius: 6, background: C.surfaceAlt }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: "0.76rem", color: C.textMuted }}>
