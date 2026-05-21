@@ -372,6 +372,7 @@ export default function WeeklyCalendarView() {
                                 min={0}
                                 max={100}
                                 step={5}
+                                aria-label="Adjust effective completion percentage"
                                 value={effectivePct}
                                 onClick={(e) => e.stopPropagation()}
                                 onChange={(e) => {
@@ -442,6 +443,7 @@ export default function WeeklyCalendarView() {
                             min={0}
                             max={100}
                             step={5}
+                            aria-label="Adjust effective completion percentage"
                             value={effectivePct}
                             onClick={(e) => e.stopPropagation()}
                             onChange={(e) => {
@@ -574,7 +576,7 @@ export default function WeeklyCalendarView() {
             </div>
             <div style={formRow}>
               <label style={labelStyle}>Effective usage: {sEffectivePct}%</label>
-              <input type="range" min={0} max={100} step={5} value={sEffectivePct} onChange={(e) => setSEffectivePct(Number(e.target.value))} style={{ width: "100%", accentColor: C.accent, cursor: "pointer" }} />
+              <input type="range" min={0} max={100} step={5} aria-label="Adjust effective completion percentage" value={sEffectivePct} onChange={(e) => setSEffectivePct(Number(e.target.value))} style={{ width: "100%", accentColor: C.accent, cursor: "pointer" }} />
             </div>
           </>
         ) : (
