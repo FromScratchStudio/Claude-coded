@@ -38,6 +38,16 @@ function addDays(date: Date, days: number): Date {
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const DEFAULT_EFFECTIVE_PCT = 100;
+
+function getEffectivePct(value?: number): number {
+  const safeValue = typeof value === "number" && Number.isFinite(value) ? value : DEFAULT_EFFECTIVE_PCT;
+  return Math.max(0, Math.min(100, safeValue));
+}
+
+function getEffectiveStars(value: number): number {
+  return Math.max(0, Math.min(5, Math.round(value / 20)));
+}
+
 function fmtDate(date: Date): string {
   return `${date.getDate()} ${MONTHS[date.getMonth()]}`;
 }
@@ -195,13 +205,13 @@ export default function RetrospectiveView() {
   const totalUtCount = plannedWeekSlots.reduce((acc, s) => acc + s.utCount, 0);
   const totalPlannedMin = plannedWeekSlots.reduce((acc, s) => acc + s.durationMin, 0);
   const effectivePlannedMin = plannedWeekSlots.reduce(
-    (acc, s) => acc + s.durationMin * ((s.effectivePct ?? DEFAULT_EFFECTIVE_PCT) / 100),
+    (acc, s) => acc + s.durationMin * (getEffectivePct(s.effectivePct) / 100),
     0
   );
   const effectiveCompletionPct = totalPlannedMin > 0
     ? Math.round((effectivePlannedMin / totalPlannedMin) * 100)
     : 0;
-  const effectiveStars = Math.round(effectiveCompletionPct / 20);
+  const effectiveStars = getEffectiveStars(effectiveCompletionPct);
   const effectiveStarsLabel = `${"★".repeat(effectiveStars)}${"☆".repeat(5 - effectiveStars)}`;
   const totalUnplannedMin = unplannedSlots.reduce((acc, s) => acc + s.durationMin, 0);
   const totalCalendarMin = totalPlannedMin + totalUnplannedMin;

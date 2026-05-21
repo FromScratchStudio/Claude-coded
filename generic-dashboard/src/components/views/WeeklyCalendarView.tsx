@@ -50,6 +50,7 @@ export default function WeeklyCalendarView() {
   const [showModal, setShowModal] = useState(false);
   const [editSlot, setEditSlot] = useState<ScheduleSlot | null>(null);
   const [activeMobileDay, setActiveMobileDay] = useState<DayIndex>(0);
+  const [pendingEffectivePctBySlotId, setPendingEffectivePctBySlotId] = useState<Record<string, number>>({});
 
   const [sDay, setSDay] = useState<DayIndex>(0);
   const [sHour, setSHour] = useState(9);
@@ -104,7 +105,36 @@ export default function WeeklyCalendarView() {
 
   function getEffectivePct(slot: ScheduleSlot): number {
     const value = slot.effectivePct ?? DEFAULT_EFFECTIVE_PCT;
-    return Math.max(0, Math.min(100, value));
+    const safeValue = typeof value === "number" && Number.isFinite(value) ? value : DEFAULT_EFFECTIVE_PCT;
+    return Math.max(0, Math.min(100, safeValue));
+  }
+
+  function getDisplayedEffectivePct(slot: ScheduleSlot): number {
+    const pendingValue = pendingEffectivePctBySlotId[slot.id];
+    return pendingValue === undefined ? getEffectivePct(slot) : pendingValue;
+  }
+
+  function setPendingEffectivePct(slotId: string, value: number) {
+    setPendingEffectivePctBySlotId((current) => ({
+      ...current,
+      [slotId]: Math.max(0, Math.min(100, value)),
+    }));
+  }
+
+  function commitEffectivePct(slot: ScheduleSlot) {
+    const pendingValue = pendingEffectivePctBySlotId[slot.id];
+    if (pendingValue === undefined) return;
+
+    const nextValue = Math.max(0, Math.min(100, pendingValue));
+    const currentValue = getEffectivePct(slot);
+    if (nextValue !== currentValue) {
+      updateScheduleSlot(slot.id, { effectivePct: nextValue });
+    }
+
+    setPendingEffectivePctBySlotId((current) => {
+      const { [slot.id]: _, ...rest } = current;
+      return rest;
+    });
   }
 
   function renderMiniDonut(pct: number, color: string) {
@@ -126,7 +156,7 @@ export default function WeeklyCalendarView() {
   }
 
   function renderEffectiveCompletionControl(slot: ScheduleSlot, color: string, showValue: boolean) {
-    const effectivePct = getEffectivePct(slot);
+    const effectivePct = getDisplayedEffectivePct(slot);
     return (
       <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
         <input
@@ -137,10 +167,16 @@ export default function WeeklyCalendarView() {
           aria-label="Adjust effective completion percentage"
           value={effectivePct}
           onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
           onChange={(e) => {
             e.stopPropagation();
-            updateScheduleSlot(slot.id, { effectivePct: Number(e.target.value) });
+            setPendingEffectivePct(slot.id, Number(e.target.value));
           }}
+          onPointerUp={(e) => {
+            e.stopPropagation();
+            commitEffectivePct(slot);
+          }}
+          onBlur={() => commitEffectivePct(slot)}
           style={{ width: "100%", accentColor: color, cursor: "pointer" }}
         />
         {showValue && (
@@ -227,7 +263,9 @@ export default function WeeklyCalendarView() {
     let slotDescription: string | undefined;
     let slotStartTime: string | undefined;
     let slotEndTime: string | undefined;
-    let slotEffectivePct: number | undefined = sSlotType === "planned" ? sEffectivePct : undefined;
+    let slotEffectivePct: number | undefined = sSlotType === "planned"
+      ? Math.max(0, Math.min(100, sEffectivePct))
+      : undefined;
 
     if (sSlotType === "unplanned") {
       const title = sTitle.trim();
@@ -379,7 +417,7 @@ export default function WeeklyCalendarView() {
                       const color = getSlotColor(slot, slotMode?.color);
                       const label = getSlotLabel(slot, slotMode?.name);
                       const isPlanned = (slot.slotType ?? "planned") === "planned";
-                      const effectivePct = getEffectivePct(slot);
+                      const effectivePct = getDisplayedEffectivePct(slot);
                       return (
                         <div
                           key={slot.id}
@@ -436,7 +474,7 @@ export default function WeeklyCalendarView() {
                     const label = getSlotLabel(slot, slotMode?.name);
                     const heightPx = Math.round((slot.durationMin / 60) * SLOT_HEIGHT);
                     const isPlanned = (slot.slotType ?? "planned") === "planned";
-                    const effectivePct = getEffectivePct(slot);
+                    const effectivePct = getDisplayedEffectivePct(slot);
                     return (
                       <div
                         key={slot.id}
