@@ -10,6 +10,7 @@ import { formatHourToTime, getSlotFallbackEndTime, parseTimeToMinutes } from "..
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const HOURS = Array.from({ length: 17 }, (_, i) => i + 6);
 const SLOT_HEIGHT = 36;
+const MIN_PLANNED_SLOT_HEIGHT = 34;
 const UNPLANNED_COLOR = C.orange;
 const DEFAULT_EFFECTIVE_PCT = 100;
 
@@ -199,7 +200,7 @@ export default function WeeklyCalendarView() {
     let slotDescription: string | undefined;
     let slotStartTime: string | undefined;
     let slotEndTime: string | undefined;
-    let slotEffectivePct: number | undefined = sEffectivePct;
+    let slotEffectivePct: number | undefined = sSlotType === "planned" ? sEffectivePct : undefined;
 
     if (sSlotType === "unplanned") {
       const title = sTitle.trim();
@@ -223,7 +224,6 @@ export default function WeeklyCalendarView() {
       slotDescription = sDescription.trim();
       slotStartTime = sStartTime;
       slotEndTime = sEndTime;
-      slotEffectivePct = undefined;
     }
 
     if (editSlot) {
@@ -429,7 +429,7 @@ export default function WeeklyCalendarView() {
                       <div
                         key={slot.id}
                         onClick={(e) => { e.stopPropagation(); openEditSlot(slot); }}
-                        style={{ position: "absolute", top: 1, left: 2, right: 2, height: Math.max(heightPx - 2, isPlanned ? 34 : 20), background: `${color}25`, border: `1px solid ${color}60`, borderRadius: 4, padding: "2px 4px", fontSize: "0.65rem", color, overflow: "hidden", cursor: "pointer", zIndex: 1 }}
+                        style={{ position: "absolute", top: 1, left: 2, right: 2, height: Math.max(heightPx - 2, isPlanned ? MIN_PLANNED_SLOT_HEIGHT : 20), background: `${color}25`, border: `1px solid ${color}60`, borderRadius: 4, padding: "2px 4px", fontSize: "0.65rem", color, overflow: "hidden", cursor: "pointer", zIndex: 1 }}
                       >
                         <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
                           {isPlanned && renderMiniDonut(effectivePct, color)}
