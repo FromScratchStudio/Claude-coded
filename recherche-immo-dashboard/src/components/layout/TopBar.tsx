@@ -3,9 +3,21 @@ import { C, FONT } from "../../theme";
 import type { ViewId } from "../../types";
 
 const ALL_NAV: { id: ViewId; label: string; icon: string; module?: string }[] = [
+  { id: "dashboard", label: "Vue d'ensemble", icon: "◉" },
   { id: "projects", label: "Projets", icon: "◻", module: "projects" },
   { id: "pipeline", label: "Pipeline", icon: "⇒", module: "pipeline" },
+  { id: "kpis", label: "KPIs", icon: "▲", module: "kpis" },
+  { id: "quarter", label: "Trimestre", icon: "◑", module: "quarter" },
+  { id: "phases", label: "Phases", icon: "▷", module: "phases" },
+  { id: "guardrails", label: "Garde-fous", icon: "⚠", module: "guardrails" },
+  { id: "personas", label: "Personas", icon: "◈", module: "personas" },
+  { id: "ideas", label: "Idées", icon: "✦", module: "ideas" },
+  { id: "content-hub", label: "Hub contenu", icon: "▣", module: "contentHub" },
   { id: "weekly-calendar", label: "Calendrier", icon: "▦", module: "weeklyCalendar" },
+  { id: "retrospective", label: "Rétrospective", icon: "◌", module: "retrospective" },
+  { id: "settings", label: "Paramètres", icon: "⚙" },
+  { id: "user-guide", label: "Guide", icon: "?" },
+  { id: "ai-advisor", label: "IA Conseiller", icon: "✧", module: "aiAdvisor" },
 ];
 
 export default function TopBar() {
