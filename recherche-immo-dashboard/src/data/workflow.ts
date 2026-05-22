@@ -15,7 +15,7 @@ export const WORKFLOW_STAGES: WorkflowStage[] = [
     fullName: "Qualification du bien",
     when: "Analyse du bien et des critères",
     gates: ["Description complétée", "Contact vérifié"],
-    rule: "Qualifer avant de planifier une visite",
+    rule: "Qualifier avant de planifier une visite",
   },
   {
     id: 3,
