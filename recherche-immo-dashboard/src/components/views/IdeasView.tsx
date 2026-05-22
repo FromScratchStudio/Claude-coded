@@ -484,7 +484,7 @@ export default function IdeasView() {
                           padding: "0.35rem 0.75rem",
                           borderRadius: 20,
                           border: `1px solid ${active ? C.accent : C.border}`,
-                          background: active ? `${C.accent}18` : C.surface,
+                          background: active ? `color-mix(in srgb, var(--accent) 18%, transparent)` : C.surface,
                           color: active ? C.text : C.textMuted,
                           cursor: "pointer",
                           fontSize: "0.78rem",
@@ -497,7 +497,7 @@ export default function IdeasView() {
                           style={{
                             marginLeft: 5,
                             fontSize: "0.68rem",
-                            background: count > 0 ? `${C.accent}22` : C.surfaceAlt,
+                            background: count > 0 ? `color-mix(in srgb, var(--accent) 22%, transparent)` : C.surfaceAlt,
                             color: count > 0 ? C.accent : C.textDim,
                             borderRadius: 10,
                             padding: "0 5px",

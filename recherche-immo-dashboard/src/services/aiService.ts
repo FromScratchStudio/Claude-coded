@@ -281,7 +281,7 @@ export function renderMarkdown(text: string, headingColor: string): string {
   // so that pre-block HTML is never touched by the inline regexes.
   return processed
     .replace(/`([^`]+)`/g, (_m, code) =>
-      `<code style="background:#06080c;border:1px solid #1f2535;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:0.85em">${escapeHtml(code)}</code>`
+      `<code style="background:#06080c;border:1px solid #1f2535;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:0.85em">${code}</code>`
     )
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/\*([^*]+)\*/g, "<em>$1</em>")

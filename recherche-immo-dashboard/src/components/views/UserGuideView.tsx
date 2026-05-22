@@ -32,7 +32,7 @@ export default function UserGuideView() {
     <div
       style={{
         padding: "0.4rem 0.75rem",
-        background: `${C.accent}10`,
+        background: `color-mix(in srgb, var(--accent) 10%, transparent)`,
         borderLeft: `3px solid ${C.accent}`,
         borderRadius: 4,
         marginBottom: 8,

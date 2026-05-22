@@ -737,7 +737,7 @@ export const useStore = create<StoreState & StoreActions>()(
             "principles", "riskPatterns", "collabChecklist", "phaseBudgets",
             "strategyStartDate", "strategyEstimatedEndDate",
             "scheduleSlots", "defaultSlotDurationMin", "weeklyRetros",
-            "aiConversations", "activeConversationId",
+            "aiConversations", "activeConversationId", "googleDriveConfig",
           ];
           const VALID_VIEW_IDS: ViewId[] = [
             "dashboard", "pipeline", "projects", "kpis", "quarter", "phases",

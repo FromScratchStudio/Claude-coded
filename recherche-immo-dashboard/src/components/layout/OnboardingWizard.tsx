@@ -14,17 +14,17 @@ const ACCENT_PRESETS = [
 ];
 
 const MODULE_LIST = [
-  { key: "pipeline", label: "Pipeline", desc: "Track deliverables through workflow stages" },
-  { key: "projects", label: "Projects", desc: "Portfolio of projects with ring-based priority" },
-  { key: "kpis", label: "KPIs", desc: "Key performance indicators with targets" },
-  { key: "quarter", label: "Quarterly Plan", desc: "Quarterly goals and allocation planning" },
-  { key: "phases", label: "Roadmap Phases", desc: "Phased strategic roadmap with tasks" },
-  { key: "guardrails", label: "Guardrails", desc: "Principles, modes, and risk patterns" },
-  { key: "personas", label: "Personas", desc: "Identity profiles, voices, or team personas" },
-  { key: "ideas", label: "Ideas Board", desc: "Kanban-style idea capture and filtering" },
-  { key: "contentHub", label: "Content Hub", desc: "Manage content series and publication pipeline" },
-  { key: "weeklyCalendar", label: "Weekly Calendar", desc: "Schedule work sessions with time unit tracking" },
-  { key: "retrospective", label: "Retrospective", desc: "Weekly reflection and energy tracking" },
+  { key: "pipeline", label: "Pipeline", desc: "Suivre les livrables à travers les étapes du workflow" },
+  { key: "projects", label: "Projets", desc: "Portefeuille de projets avec priorité par anneaux" },
+  { key: "kpis", label: "KPIs", desc: "Indicateurs clés de performance avec objectifs" },
+  { key: "quarter", label: "Plan trimestriel", desc: "Objectifs trimestriels et planification de l'allocation" },
+  { key: "phases", label: "Phases de la feuille de route", desc: "Feuille de route stratégique phasée avec tâches" },
+  { key: "guardrails", label: "Garde-fous", desc: "Principes, modes opératoires et risques" },
+  { key: "personas", label: "Personas", desc: "Profils d'identité, voix ou personas d'équipe" },
+  { key: "ideas", label: "Tableau d'idées", desc: "Capture et filtrage d'idées en mode Kanban" },
+  { key: "contentHub", label: "Hub de contenu", desc: "Gérer les séries de contenu et le pipeline de publication" },
+  { key: "weeklyCalendar", label: "Calendrier hebdomadaire", desc: "Planifier les sessions de travail avec suivi des unités de temps" },
+  { key: "retrospective", label: "Rétrospective", desc: "Bilan hebdomadaire et suivi de l'énergie" },
 ] as const;
 
 export default function OnboardingWizard() {
@@ -32,8 +32,8 @@ export default function OnboardingWizard() {
   const updateAppConfig = useStore((s) => s.updateAppConfig);
 
   const [step, setStep] = useState(0);
-  const [name, setName] = useState("My Dashboard");
-  const [tagline, setTagline] = useState("Strategy · Projects · Execution");
+  const [name, setName] = useState("Mon Tableau de Bord");
+  const [tagline, setTagline] = useState("Recherche · Projets · Stratégie");
   const [accent, setAccent] = useState("#4c7fc9");
   const [customAccent, setCustomAccent] = useState("#4c7fc9");
   const [modules, setModules] = useState({ ...appConfig.modules });
@@ -53,7 +53,7 @@ export default function OnboardingWizard() {
 
   function finish() {
     updateAppConfig({
-      appName: name.trim() || "My Dashboard",
+      appName: name.trim() || "Mon Tableau de Bord",
       appTagline: tagline.trim(),
       accentColor: accent,
       timeUnitLabel: timeUnitLabel.trim() || "UT",
@@ -77,54 +77,53 @@ export default function OnboardingWizard() {
           marginBottom: "0.5rem",
         }}
       >
-        Welcome to Generic Dashboard
+        Bienvenue sur Recherche Immo
       </h1>
       <p style={{ color: C.textSoft, fontSize: "1rem", maxWidth: 500, margin: "0 auto 2rem" }}>
-        A fully configurable strategy and project dashboard. Let's set it up for your needs in
-        just a few steps.
+        Un tableau de bord configurable pour votre recherche immobilière. Configurons-le en quelques étapes.
       </p>
       <button onClick={() => setStep(1)} style={nextBtn}>
-        Get started →
+        Commencer →
       </button>
     </div>,
 
     // Step 1: Name & tagline
     <div key="name" style={{ padding: "0.5rem" }}>
       <h2 style={{ fontFamily: FONT.display, fontSize: "1.5rem", color: C.text, marginBottom: "0.5rem" }}>
-        Name your dashboard
+        Nommez votre tableau de bord
       </h2>
       <p style={{ color: C.textMuted, marginBottom: "1.5rem" }}>
-        Give it a name that reflects your project or strategy.
+        Donnez-lui un nom qui reflète votre projet ou stratégie.
       </p>
-      <label style={lbl}>Dashboard name</label>
+      <label style={lbl}>Nom du tableau de bord</label>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         style={inp}
-        placeholder="e.g. Startup OS, Product Strategy 2025, Studio Dashboard"
+        placeholder="ex. Recherche Appartement, Investissement 2025, Projet Maison"
         maxLength={60}
       />
-      <label style={{ ...lbl, marginTop: "1rem" }}>Tagline / subtitle</label>
+      <label style={{ ...lbl, marginTop: "1rem" }}>Sous-titre</label>
       <input
         value={tagline}
         onChange={(e) => setTagline(e.target.value)}
         style={inp}
-        placeholder="e.g. Strategy · Projects · Execution"
+        placeholder="ex. Recherche · Projets · Stratégie"
         maxLength={80}
       />
       <div style={navRow}>
-        <button onClick={() => setStep(0)} style={backBtn}>← Back</button>
-        <button onClick={() => setStep(2)} style={nextBtn}>Next →</button>
+        <button onClick={() => setStep(0)} style={backBtn}>← Retour</button>
+        <button onClick={() => setStep(2)} style={nextBtn}>Suivant →</button>
       </div>
     </div>,
 
     // Step 2: Accent color
     <div key="color" style={{ padding: "0.5rem" }}>
       <h2 style={{ fontFamily: FONT.display, fontSize: "1.5rem", color: C.text, marginBottom: "0.5rem" }}>
-        Choose your accent color
+        Choisissez votre couleur d'accentuation
       </h2>
       <p style={{ color: C.textMuted, marginBottom: "1.5rem" }}>
-        This color is used throughout the interface for highlights and active states.
+        Cette couleur est utilisée dans toute l'interface pour les surlignages et les états actifs.
       </p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: "1.5rem" }}>
         {ACCENT_PRESETS.map((preset) => (
@@ -144,7 +143,7 @@ export default function OnboardingWizard() {
           />
         ))}
       </div>
-      <label style={lbl}>Custom hex color</label>
+      <label style={lbl}>Couleur hexadécimale personnalisée</label>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <input
           type="color"
@@ -166,23 +165,23 @@ export default function OnboardingWizard() {
         />
       </div>
       <div style={{ marginTop: "1.5rem", padding: "0.75rem 1rem", background: C.surfaceAlt, borderRadius: 8, border: `1px solid ${C.border}` }}>
-        <span style={{ color: C.accent, fontWeight: 600, marginRight: 8 }}>Preview:</span>
-        <span style={{ color: C.text }}>{name || "My Dashboard"}</span>
+        <span style={{ color: C.accent, fontWeight: 600, marginRight: 8 }}>Aperçu :</span>
+        <span style={{ color: C.text }}>{name || "Mon Tableau de Bord"}</span>
         <span style={{ color: C.textMuted, marginLeft: 8, fontSize: "0.85rem" }}>{tagline}</span>
       </div>
       <div style={navRow}>
-        <button onClick={() => setStep(1)} style={backBtn}>← Back</button>
-        <button onClick={() => setStep(3)} style={nextBtn}>Next →</button>
+        <button onClick={() => setStep(1)} style={backBtn}>← Retour</button>
+        <button onClick={() => setStep(3)} style={nextBtn}>Suivant →</button>
       </div>
     </div>,
 
     // Step 3: Modules
     <div key="modules" style={{ padding: "0.5rem" }}>
       <h2 style={{ fontFamily: FONT.display, fontSize: "1.5rem", color: C.text, marginBottom: "0.5rem" }}>
-        Enable the modules you need
+        Activez les modules dont vous avez besoin
       </h2>
       <p style={{ color: C.textMuted, marginBottom: "1.25rem" }}>
-        You can change these at any time in Settings.
+        Vous pouvez les modifier à tout moment dans les Paramètres.
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {MODULE_LIST.map((mod) => {
@@ -196,8 +195,8 @@ export default function OnboardingWizard() {
                 gap: 12,
                 padding: "0.65rem 0.85rem",
                 borderRadius: 8,
-                background: enabled ? `${C.accent}15` : C.surfaceAlt,
-                border: `1px solid ${enabled ? C.accent + "50" : C.border}`,
+                background: enabled ? `color-mix(in srgb, var(--accent) 15%, transparent)` : C.surfaceAlt,
+                border: `1px solid ${enabled ? `color-mix(in srgb, var(--accent) 50%, transparent)` : C.border}`,
                 cursor: "pointer",
                 transition: "background 0.15s, border-color 0.15s",
               }}
@@ -219,28 +218,28 @@ export default function OnboardingWizard() {
         })}
       </div>
       <div style={navRow}>
-        <button onClick={() => setStep(2)} style={backBtn}>← Back</button>
-        <button onClick={() => setStep(4)} style={nextBtn}>Next →</button>
+        <button onClick={() => setStep(2)} style={backBtn}>← Retour</button>
+        <button onClick={() => setStep(4)} style={nextBtn}>Suivant →</button>
       </div>
     </div>,
 
     // Step 4: Time units
     <div key="time" style={{ padding: "0.5rem" }}>
       <h2 style={{ fontFamily: FONT.display, fontSize: "1.5rem", color: C.text, marginBottom: "0.5rem" }}>
-        Configure work units
+        Configurer les unités de travail
       </h2>
       <p style={{ color: C.textMuted, marginBottom: "1.5rem" }}>
-        Work units are your basic time blocks for scheduling and tracking capacity.
+        Les unités de travail sont vos blocs de temps de base pour planifier et suivre votre capacité.
       </p>
-      <label style={lbl}>Unit name (abbreviation)</label>
+      <label style={lbl}>Nom de l'unité (abréviation)</label>
       <input
         value={timeUnitLabel}
         onChange={(e) => setTimeUnitLabel(e.target.value)}
         style={inp}
-        placeholder="e.g. UT, WU, Block, Session, Sprint"
+        placeholder="ex. UT, UW, Bloc, Session, Sprint"
         maxLength={10}
       />
-      <label style={{ ...lbl, marginTop: "1rem" }}>Duration per unit (minutes)</label>
+      <label style={{ ...lbl, marginTop: "1rem" }}>Durée par unité (minutes)</label>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
         {[25, 45, 60, 90, 120].map((m) => (
           <button
@@ -260,7 +259,7 @@ export default function OnboardingWizard() {
           </button>
         ))}
       </div>
-      <label style={{ ...lbl, marginTop: "1rem" }}>Weekly target (units per week)</label>
+      <label style={{ ...lbl, marginTop: "1rem" }}>Objectif hebdomadaire (unités par semaine)</label>
       <input
         type="number"
         value={weeklyTarget}
@@ -270,11 +269,11 @@ export default function OnboardingWizard() {
         max={60}
       />
       <p style={{ color: C.textDim, fontSize: "0.78rem", marginTop: 6 }}>
-        = {Math.round((weeklyTarget * timeUnitMinutes) / 60 * 10) / 10} hours/week of tracked work
+        = {Math.round((weeklyTarget * timeUnitMinutes) / 60 * 10) / 10} heures/semaine de travail suivi
       </p>
       <div style={navRow}>
-        <button onClick={() => setStep(3)} style={backBtn}>← Back</button>
-        <button onClick={() => setStep(5)} style={nextBtn}>Next →</button>
+        <button onClick={() => setStep(3)} style={backBtn}>← Retour</button>
+        <button onClick={() => setStep(5)} style={nextBtn}>Suivant →</button>
       </div>
     </div>,
 
@@ -289,16 +288,16 @@ export default function OnboardingWizard() {
           marginBottom: "0.5rem",
         }}
       >
-        You're all set!
+        Vous êtes prêt·e !
       </h2>
       <p style={{ color: C.textSoft, fontSize: "0.95rem", maxWidth: 440, margin: "0 auto 0.5rem" }}>
-        <strong style={{ color: C.accent }}>{name || "My Dashboard"}</strong> is configured and ready to use.
+        <strong style={{ color: C.accent }}>{name || "Mon Tableau de Bord"}</strong> est configuré et prêt à l'emploi.
       </p>
       <p style={{ color: C.textMuted, fontSize: "0.85rem", maxWidth: 440, margin: "0 auto 2rem" }}>
-        You can always adjust everything in <strong>Settings</strong>. Let's go!
+        Vous pouvez tout ajuster à tout moment dans <strong>Paramètres</strong>. C'est parti !
       </p>
       <button onClick={finish} style={{ ...nextBtn, padding: "0.7rem 2rem", fontSize: "1rem" }}>
-        Open Dashboard →
+        Ouvrir le tableau de bord →
       </button>
     </div>,
   ];

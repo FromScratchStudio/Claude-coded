@@ -280,8 +280,8 @@ export default function AiAdvisorView() {
                   style={{
                     padding: "0.5rem 0.65rem",
                     borderRadius: 6,
-                    background: activeConversationId === conv.id ? `${C.accent}18` : "transparent",
-                    border: `1px solid ${activeConversationId === conv.id ? C.accent + "30" : "transparent"}`,
+                    background: activeConversationId === conv.id ? `color-mix(in srgb, var(--accent) 18%, transparent)` : "transparent",
+                    border: `1px solid ${activeConversationId === conv.id ? `color-mix(in srgb, var(--accent) 30%, transparent)` : "transparent"}`,
                     marginBottom: 2,
                     display: "flex",
                     alignItems: "center",

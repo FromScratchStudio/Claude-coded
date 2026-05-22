@@ -171,7 +171,7 @@ export default function SettingsView() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `generic-dashboard-export-${Date.now()}.json`;
+    a.download = `recherche-immo-dashboard-export-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
 
@@ -482,8 +482,8 @@ export default function SettingsView() {
                     gap: 12,
                     cursor: "pointer",
                     padding: "0.5rem 0.75rem",
-                    background: enabled ? `${C.accent}08` : C.surfaceAlt,
-                    border: `1px solid ${enabled ? C.accent + "30" : C.border}`,
+                    background: enabled ? `color-mix(in srgb, var(--accent) 8%, transparent)` : C.surfaceAlt,
+                    border: `1px solid ${enabled ? `color-mix(in srgb, var(--accent) 30%, transparent)` : C.border}`,
                     borderRadius: 8,
                     transition: "background 0.15s",
                   }}

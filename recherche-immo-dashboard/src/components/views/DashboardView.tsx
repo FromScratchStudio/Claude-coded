@@ -566,8 +566,8 @@ export default function DashboardView() {
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
-            background: `${C.accent}08`,
-            border: `1px solid ${C.accent}30`,
+            background: `color-mix(in srgb, var(--accent) 8%, transparent)`,
+            border: `1px solid color-mix(in srgb, var(--accent) 30%, transparent)`,
           }}
         >
           <div

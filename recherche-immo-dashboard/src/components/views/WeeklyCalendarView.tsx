@@ -424,7 +424,7 @@ export default function WeeklyCalendarView() {
                   key={hour}
                   onClick={() => openNewSlot(activeMobileDay, hour)}
                   style={{ display: "flex", gap: 8, padding: "0.4rem 0.75rem", borderBottom: `1px solid ${C.border}`, cursor: "pointer", minHeight: SLOT_HEIGHT, alignItems: "flex-start", boxSizing: "border-box" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = `${C.accent}08`)}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = `color-mix(in srgb, var(--accent) 8%, transparent)`)}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 >
                   <span style={{ fontSize: "0.68rem", color: C.textVeryDim, width: 36, flexShrink: 0, paddingTop: 2 }}>{hour}:00</span>
@@ -482,7 +482,7 @@ export default function WeeklyCalendarView() {
                   key={`cell-${hour}-${dayIdx}`}
                   onClick={() => openNewSlot(dayIdx as DayIndex, hour)}
                   style={{ height: SLOT_HEIGHT, borderBottom: `1px solid ${C.border}`, borderLeft: `1px solid ${C.border}`, position: "relative", cursor: "pointer", background: "transparent", transition: "background 0.1s" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = `${C.accent}08`)}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = `color-mix(in srgb, var(--accent) 8%, transparent)`)}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 >
                   {slotsInCell.map((slot) => {
@@ -599,7 +599,7 @@ export default function WeeklyCalendarView() {
               <label style={labelStyle}>Nombre de {timeUnitLabel}</label>
               <div style={{ display: "flex", gap: 6 }}>
                 {[0, 1, 2, 3].map((n) => (
-                  <button key={n} onClick={() => setSUtCount(n)} style={{ background: sUtCount === n ? `${C.accent}25` : C.surfaceAlt, border: `1px solid ${sUtCount === n ? C.accent : C.border}`, color: sUtCount === n ? C.accent : C.textMuted, borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: "0.8rem" }}>
+                  <button key={n} onClick={() => setSUtCount(n)} style={{ background: sUtCount === n ? `color-mix(in srgb, var(--accent) 25%, transparent)` : C.surfaceAlt, border: `1px solid ${sUtCount === n ? C.accent : C.border}`, color: sUtCount === n ? C.accent : C.textMuted, borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: "0.8rem" }}>
                     {n}
                   </button>
                 ))}

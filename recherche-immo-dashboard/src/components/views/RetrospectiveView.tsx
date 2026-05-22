@@ -444,8 +444,8 @@ export default function RetrospectiveView() {
                       setRetroWeekOffset(diff);
                     }}
                     style={{
-                      background: isActive ? `${C.accent}15` : C.surface,
-                      border: `1px solid ${isActive ? C.accent + "50" : C.border}`,
+                      background: isActive ? `color-mix(in srgb, var(--accent) 15%, transparent)` : C.surface,
+                      border: `1px solid ${isActive ? `color-mix(in srgb, var(--accent) 50%, transparent)` : C.border}`,
                       borderRadius: 8,
                       padding: "0.6rem 0.75rem",
                       cursor: "pointer",

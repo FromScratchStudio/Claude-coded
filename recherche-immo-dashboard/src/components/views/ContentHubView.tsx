@@ -203,8 +203,8 @@ export default function ContentHubView() {
                 onClick={() => setSelectedSeriesId(series.id)}
                 style={{
                   padding: "0.6rem 0.75rem",
-                  background: selectedSeriesId === series.id ? `${C.accent}15` : C.surface,
-                  border: `1px solid ${selectedSeriesId === series.id ? C.accent + "40" : C.border}`,
+                  background: selectedSeriesId === series.id ? `color-mix(in srgb, var(--accent) 15%, transparent)` : C.surface,
+                  border: `1px solid ${selectedSeriesId === series.id ? `color-mix(in srgb, var(--accent) 40%, transparent)` : C.border}`,
                   borderRadius: 8,
                   cursor: "pointer",
                   textAlign: "left",

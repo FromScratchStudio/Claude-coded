@@ -220,8 +220,8 @@ export default function QuarterView() {
           {/* Summary card */}
           <Card
             style={{
-              background: `${C.accent}08`,
-              border: `1px solid ${C.accent}30`,
+              background: `color-mix(in srgb, var(--accent) 8%, transparent)`,
+              border: `1px solid color-mix(in srgb, var(--accent) 30%, transparent)`,
             }}
           >
             <div
