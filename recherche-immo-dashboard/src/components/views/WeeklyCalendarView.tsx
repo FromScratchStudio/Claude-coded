@@ -104,6 +104,16 @@ export default function WeeklyCalendarView() {
 
   function getSlotColor(slot: ScheduleSlot, slotModeColor?: string): string {
     if ((slot.slotType ?? "planned") === "unplanned") return UNPLANNED_COLOR;
+    if (slot.pipelineItemId) {
+      const linkedItem = pipelineItems.find((item) => item.id === slot.pipelineItemId);
+      if (linkedItem?.projectId) {
+        const project = projects.find((p) => p.id === linkedItem.projectId);
+        if (project?.ringId) {
+          const ring = appConfig.rings.find((r) => r.id === project.ringId);
+          if (ring?.color) return ring.color;
+        }
+      }
+    }
     return slotModeColor ?? C.accent;
   }
 
@@ -622,9 +632,12 @@ export default function WeeklyCalendarView() {
                 onChange={(e) => {
                   const nextItemId = e.target.value || null;
                   setSPipelineItemId(nextItemId);
-                  if (!nextItemId) return;
+                  if (!nextItemId) {
+                    setSProjectId(null);
+                    return;
+                  }
                   const linkedItem = pipelineItems.find((item) => item.id === nextItemId);
-                  if (linkedItem?.projectId) setSProjectId(linkedItem.projectId);
+                  setSProjectId(linkedItem?.projectId ?? null);
                 }}
                 style={{ ...inputStyle, cursor: "pointer" }}
               >
