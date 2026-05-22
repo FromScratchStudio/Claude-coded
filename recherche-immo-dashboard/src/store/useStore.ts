@@ -1,0 +1,902 @@
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import type {
+  ViewId, AppConfig, Project, PipelineItem, Quarter, Idea,
+  ContentSeries, ContentEntry, KpiDef, Persona,
+  Phase, WorkflowStage, OperationalMode, Principle, RiskPattern,
+  CollabCheck, PhaseBudget, ScheduleSlot, WeeklyRetro,
+  AiMessage, AiConversation,
+  GoogleDriveConfig, DriveDocRef,
+} from "../types";
+import { DEFAULT_CONFIG } from "../config/defaults";
+import { PROJECTS_INIT } from "../data/projects";
+import { PIPELINE_ITEMS_INIT, WORKFLOW_STAGES, WORK_MODES } from "../data/workflow";
+import { QUARTER_DEFAULT, KPI_DEFAULTS, KPI_DEFS } from "../data/kpis";
+import { PHASES } from "../data/phases";
+import { CONTENT_SERIES_SEED } from "../data/content";
+import { PERSONAS } from "../data/personas";
+import { OPERATIONAL_MODES, PRINCIPLES, RISK_PATTERNS, COLLAB_CHECKLIST, PHASE_BUDGETS } from "../data/principles";
+import type { WorkMode } from "../types";
+
+// ─── State shape ──────────────────────────────────────────────────────────────
+
+interface StoreState {
+  // App configuration
+  appConfig: AppConfig;
+
+  // Navigation
+  activeView: ViewId;
+
+  // Wellness metrics
+  energy: number;
+  satisfaction: number;
+  daysOut: number;
+
+  // Time unit weekly tracker [w1, w2, w3, w4]
+  utWeek: [number, number, number, number];
+
+  // Active operational mode
+  operationalMode: string | null;
+
+  // Phases
+  phases: Phase[];
+
+  // Projects
+  projects: Project[];
+
+  // KPI current values
+  kpiValues: Record<string, number>;
+
+  // Pipeline
+  pipelineItems: PipelineItem[];
+  workflowStages: WorkflowStage[];
+  workModes: WorkMode[];
+
+  // Quarterly planning
+  quarter: Quarter;
+
+  // Idea pipeline
+  ideas: Idea[];
+
+  // Content Hub
+  contentSeries: ContentSeries[];
+
+  // KPI definitions
+  kpiDefs: KpiDef[];
+
+  // Personas
+  personas: Persona[];
+
+  // Guardrails data
+  operationalModes: OperationalMode[];
+  principles: Principle[];
+  riskPatterns: RiskPattern[];
+  collabChecklist: CollabCheck[];
+  phaseBudgets: PhaseBudget[];
+
+  // Strategy dates
+  strategyStartDate: string;
+  strategyEstimatedEndDate: string;
+
+  // Weekly calendar
+  scheduleSlots: ScheduleSlot[];
+  defaultSlotDurationMin: number;
+
+  // Weekly retrospectives
+  weeklyRetros: WeeklyRetro[];
+  retroWeekOffset: number;
+
+  // AI Advisor
+  aiConversations: AiConversation[];
+  activeConversationId: string | null;
+
+  // Google Drive
+  googleDriveConfig: GoogleDriveConfig;
+
+  // Settings deep-link (cleared after first read; not meaningful to persist)
+  settingsDeepLinkTab: string | null;
+}
+
+// ─── Actions shape ────────────────────────────────────────────────────────────
+
+interface StoreActions {
+  // Config
+  updateAppConfig: (updates: Partial<AppConfig>) => void;
+
+  // Navigation
+  setActiveView: (view: ViewId) => void;
+  setRetroWeekOffset: (offset: number) => void;
+
+  // Metrics
+  setEnergy: (v: number) => void;
+  setSatisfaction: (v: number) => void;
+  setDaysOut: (v: number) => void;
+
+  // Time unit tracker
+  setUtWeek: (fn: (prev: [number, number, number, number]) => [number, number, number, number]) => void;
+  advanceWeek: () => void;
+
+  // Operational mode
+  setOperationalMode: (mode: string | null) => void;
+
+  // Phase task actions
+  toggleTask: (taskId: string) => void;
+  setTaskLabel: (taskId: string, text: string) => void;
+  addCustomTask: (phaseId: number, text: string) => void;
+  removeTask: (taskId: string) => void;
+
+  // Phase CRUD
+  addPhase: (phase: Omit<Phase, "id">) => void;
+  updatePhase: (id: number, updates: Partial<Omit<Phase, "id" | "tasks">>) => void;
+  removePhase: (id: number) => void;
+
+  // Workflow stage CRUD
+  addWorkflowStage: (stage: Omit<WorkflowStage, "id">) => void;
+  updateWorkflowStage: (id: number, updates: Partial<Omit<WorkflowStage, "id">>) => void;
+  removeWorkflowStage: (id: number) => void;
+
+  // Work modes CRUD
+  addWorkMode: (mode: WorkMode) => void;
+  updateWorkMode: (id: string, updates: Partial<Omit<WorkMode, "id">>) => void;
+  removeWorkMode: (id: string) => void;
+
+  // Projects CRUD
+  updateProject: (id: string, updates: Partial<Omit<Project, "id">>) => void;
+  addProject: (project: Project) => void;
+  removeProject: (id: string) => void;
+
+  // KPI values
+  setKpiValue: (key: string, value: number) => void;
+
+  // Pipeline items CRUD
+  updatePipelineItem: (id: string, updates: Partial<Omit<PipelineItem, "id">>) => void;
+  addPipelineItem: (item: PipelineItem) => void;
+  removePipelineItem: (id: string) => void;
+  togglePipelineGate: (itemId: string, gateIndex: number) => void;
+
+  // Quarter
+  updateQuarter: (updates: Partial<Quarter>) => void;
+  updateAllocation: (key: string, value: number) => void;
+
+  // Ideas
+  addIdea: (idea: Idea) => void;
+  updateIdea: (id: string, updates: Partial<Omit<Idea, "id">>) => void;
+  removeIdea: (id: string) => void;
+  advanceIdea: (id: string) => void;
+
+  // Content Hub
+  addContentSeries: (series: ContentSeries) => void;
+  updateContentSeries: (id: string, updates: Partial<Omit<ContentSeries, "id" | "entries">>) => void;
+  removeContentSeries: (id: string) => void;
+  addContentEntry: (seriesId: string, entry: ContentEntry) => void;
+  updateContentEntry: (seriesId: string, entryId: string, updates: Partial<Omit<ContentEntry, "id">>) => void;
+  removeContentEntry: (seriesId: string, entryId: string) => void;
+
+  // KPI definitions
+  addKpiDef: (def: KpiDef) => void;
+  updateKpiDef: (key: string, updates: Partial<Omit<KpiDef, "key">>) => void;
+  removeKpiDef: (key: string) => void;
+
+  // Personas
+  updatePersona: (id: string, updates: Partial<Persona>) => void;
+  addPersona: (persona: Persona) => void;
+  removePersona: (id: string) => void;
+
+  // Guardrails CRUD
+  addOperationalMode: (mode: OperationalMode) => void;
+  updateOperationalMode: (id: string, updates: Partial<Omit<OperationalMode, "id">>) => void;
+  removeOperationalMode: (id: string) => void;
+
+  addPrinciple: (principle: Principle) => void;
+  updatePrinciple: (n: string, updates: Partial<Omit<Principle, "n">>) => void;
+  removePrinciple: (n: string) => void;
+
+  addRiskPattern: (pattern: RiskPattern) => void;
+  updateRiskPattern: (id: string, updates: Partial<Omit<RiskPattern, "id">>) => void;
+  removeRiskPattern: (id: string) => void;
+
+  addCollabCheck: (check: CollabCheck) => void;
+  updateCollabCheck: (id: string, updates: Partial<Omit<CollabCheck, "id">>) => void;
+  removeCollabCheck: (id: string) => void;
+
+  addPhaseBudget: (budget: PhaseBudget) => void;
+  updatePhaseBudget: (idx: number, updates: Partial<PhaseBudget>) => void;
+  removePhaseBudget: (idx: number) => void;
+
+  // Strategy dates
+  setStrategyStartDate: (date: string) => void;
+  setStrategyEstimatedEndDate: (date: string) => void;
+
+  // Schedule slots
+  addScheduleSlot: (slot: Omit<ScheduleSlot, "id">) => void;
+  updateScheduleSlot: (id: string, updates: Partial<Omit<ScheduleSlot, "id">>) => void;
+  removeScheduleSlot: (id: string) => void;
+  clearWeekSlots: (weekKey: string) => void;
+  setDefaultSlotDurationMin: (min: number) => void;
+
+  // Weekly retrospectives
+  upsertWeeklyRetro: (retro: Omit<WeeklyRetro, "id" | "createdAt" | "updatedAt">) => void;
+  removeWeeklyRetro: (weekKey: string) => void;
+
+  // AI Advisor
+  createAiConversation: (title?: string) => string;
+  appendAiMessage: (conversationId: string, message: AiMessage) => void;
+  updateLastAiMessage: (conversationId: string, content: string) => void;
+  removeLastAiMessage: (conversationId: string) => void;
+  removeAiConversation: (id: string) => void;
+  setActiveConversationId: (id: string | null) => void;
+  setSettingsDeepLinkTab: (tab: string | null) => void;
+
+  // Settings
+  importState: (data: Partial<StoreState>) => void;
+  resetToDefaults: () => void;
+
+  // Google Drive
+  setGoogleDriveConfig: (config: Partial<GoogleDriveConfig>) => void;
+  addDriveDocRef: (projectId: string, ref: DriveDocRef) => void;
+  updateDriveDocRef: (projectId: string, refId: string, updates: Partial<Omit<DriveDocRef, "id">>) => void;
+  removeDriveDocRef: (projectId: string, refId: string) => void;
+}
+
+// ─── Utils ────────────────────────────────────────────────────────────────────
+
+function genId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+// ─── Initial state ────────────────────────────────────────────────────────────
+
+const initialState: StoreState = {
+  appConfig: DEFAULT_CONFIG,
+  activeView: "projects",
+  energy: 7,
+  satisfaction: 7,
+  daysOut: 0,
+  utWeek: [3, 4, 3, 0],
+  operationalMode: null,
+  phases: PHASES,
+  projects: PROJECTS_INIT,
+  kpiValues: KPI_DEFAULTS,
+  pipelineItems: PIPELINE_ITEMS_INIT,
+  workflowStages: WORKFLOW_STAGES,
+  workModes: WORK_MODES,
+  quarter: QUARTER_DEFAULT,
+  ideas: [],
+  contentSeries: CONTENT_SERIES_SEED,
+  kpiDefs: KPI_DEFS,
+  personas: PERSONAS,
+  operationalModes: OPERATIONAL_MODES,
+  principles: PRINCIPLES,
+  riskPatterns: RISK_PATTERNS,
+  collabChecklist: COLLAB_CHECKLIST,
+  phaseBudgets: PHASE_BUDGETS,
+  strategyStartDate: "2025-01-01",
+  strategyEstimatedEndDate: "2027-12-31",
+  scheduleSlots: [],
+  defaultSlotDurationMin: 90,
+  weeklyRetros: [],
+  retroWeekOffset: -1,
+  aiConversations: [],
+  activeConversationId: null,
+  settingsDeepLinkTab: null,
+  googleDriveConfig: {
+    folderUrl: "",
+    folderName: "",
+  },
+};
+
+// ─── Store ────────────────────────────────────────────────────────────────────
+
+export const useStore = create<StoreState & StoreActions>()(
+  persist(
+    (set) => ({
+      ...initialState,
+
+      // ── Config ──────────────────────────────────────────────────────────────
+      updateAppConfig: (updates) =>
+        set((s) => ({ appConfig: { ...s.appConfig, ...updates } })),
+
+      // ── Navigation ──────────────────────────────────────────────────────────
+      setActiveView: (view) => set({ activeView: view }),
+      setRetroWeekOffset: (offset) => set({ retroWeekOffset: offset }),
+
+      // ── Metrics ─────────────────────────────────────────────────────────────
+      setEnergy: (v) => set({ energy: v }),
+      setSatisfaction: (v) => set({ satisfaction: v }),
+      setDaysOut: (v) => set({ daysOut: v }),
+
+      // ── Time unit tracker ────────────────────────────────────────────────────
+      setUtWeek: (fn) => set((s) => ({ utWeek: fn(s.utWeek) })),
+      advanceWeek: () =>
+        set((s) => ({ utWeek: [s.utWeek[1], s.utWeek[2], s.utWeek[3], 0] })),
+
+      // ── Operational mode ─────────────────────────────────────────────────────
+      setOperationalMode: (mode) => set({ operationalMode: mode }),
+
+      // ── Phase task actions ───────────────────────────────────────────────────
+      toggleTask: (taskId) =>
+        set((s) => ({
+          phases: s.phases.map((p) => ({
+            ...p,
+            tasks: p.tasks.map((t) =>
+              t.id === taskId ? { ...t, done: !t.done } : t
+            ),
+          })),
+        })),
+
+      setTaskLabel: (taskId, text) =>
+        set((s) => ({
+          phases: s.phases.map((p) => ({
+            ...p,
+            tasks: p.tasks.map((t) =>
+              t.id === taskId ? { ...t, text } : t
+            ),
+          })),
+        })),
+
+      addCustomTask: (phaseId, text) => {
+        const id = `ct-${genId()}`;
+        set((s) => ({
+          phases: s.phases.map((p) =>
+            p.id === phaseId
+              ? { ...p, tasks: [...p.tasks, { id, text, done: false }] }
+              : p
+          ),
+        }));
+      },
+
+      removeTask: (taskId) =>
+        set((s) => ({
+          phases: s.phases.map((p) => ({
+            ...p,
+            tasks: p.tasks.filter((t) => t.id !== taskId),
+          })),
+        })),
+
+      // ── Phase CRUD ───────────────────────────────────────────────────────────
+      addPhase: (phase) =>
+        set((s) => {
+          const newId = Math.max(0, ...s.phases.map((p) => p.id)) + 1;
+          return { phases: [...s.phases, { ...phase, id: newId }] };
+        }),
+      updatePhase: (id, updates) =>
+        set((s) => ({
+          phases: s.phases.map((p) => (p.id === id ? { ...p, ...updates } : p)),
+        })),
+      removePhase: (id) =>
+        set((s) => {
+          const remaining = s.phases.filter((p) => p.id !== id);
+          if (remaining.length === 0) return s;
+          const fallback = remaining.reduce((closest, p) =>
+            Math.abs(p.id - id) < Math.abs(closest - id) ? p.id : closest,
+            remaining[0].id
+          );
+          return {
+            phases: remaining,
+            projects: s.projects.map((pr) =>
+              pr.phase === id ? { ...pr, phase: fallback } : pr
+            ),
+          };
+        }),
+
+      // ── Workflow stage CRUD ──────────────────────────────────────────────────
+      addWorkflowStage: (stage) =>
+        set((s) => {
+          const newId = Math.max(0, ...s.workflowStages.map((ws) => ws.id)) + 1;
+          return { workflowStages: [...s.workflowStages, { ...stage, id: newId }] };
+        }),
+      updateWorkflowStage: (id, updates) =>
+        set((s) => ({
+          workflowStages: s.workflowStages.map((ws) => {
+            if (ws.id === id) return { ...ws, ...updates };
+            if (updates.isCalendarStage) return { ...ws, isCalendarStage: false };
+            return ws;
+          }),
+        })),
+      removeWorkflowStage: (id) =>
+        set((s) => {
+          if (s.pipelineItems.some((item) => item.stage === id)) return s;
+          return { workflowStages: s.workflowStages.filter((ws) => ws.id !== id) };
+        }),
+
+      // ── Work modes CRUD ──────────────────────────────────────────────────────
+      addWorkMode: (mode) => set((s) => ({ workModes: [...s.workModes, mode] })),
+      updateWorkMode: (id, updates) =>
+        set((s) => ({
+          workModes: s.workModes.map((m) => (m.id === id ? { ...m, ...updates } : m)),
+        })),
+      removeWorkMode: (id) =>
+        set((s) => ({ workModes: s.workModes.filter((m) => m.id !== id) })),
+
+      // ── Projects CRUD ────────────────────────────────────────────────────────
+      updateProject: (id, updates) =>
+        set((s) => ({
+          projects: s.projects.map((p) => (p.id === id ? { ...p, ...updates } : p)),
+        })),
+      addProject: (project) =>
+        set((s) => ({ projects: [...s.projects, project] })),
+      removeProject: (id) =>
+        set((s) => ({ projects: s.projects.filter((p) => p.id !== id) })),
+
+      // ── KPI values ───────────────────────────────────────────────────────────
+      setKpiValue: (key, value) =>
+        set((s) => ({ kpiValues: { ...s.kpiValues, [key]: value } })),
+
+      // ── Pipeline items CRUD ──────────────────────────────────────────────────
+      updatePipelineItem: (id, updates) =>
+        set((s) => ({
+          pipelineItems: s.pipelineItems.map((c) =>
+            c.id === id ? { ...c, ...updates } : c
+          ),
+        })),
+      addPipelineItem: (item) =>
+        set((s) => ({ pipelineItems: [...s.pipelineItems, item] })),
+      removePipelineItem: (id) =>
+        set((s) => ({ pipelineItems: s.pipelineItems.filter((c) => c.id !== id) })),
+      togglePipelineGate: (itemId, gateIndex) =>
+        set((s) => ({
+          pipelineItems: s.pipelineItems.map((c) => {
+            if (c.id !== itemId) return c;
+            const gates = [...c.gates];
+            gates[gateIndex] = !gates[gateIndex];
+            return { ...c, gates, lastUpdate: "just now" };
+          }),
+        })),
+
+      // ── Quarter ──────────────────────────────────────────────────────────────
+      updateQuarter: (updates) =>
+        set((s) => ({ quarter: { ...s.quarter, ...updates } })),
+      updateAllocation: (key, value) =>
+        set((s) => ({
+          quarter: {
+            ...s.quarter,
+            allocation: { ...s.quarter.allocation, [key]: value },
+          },
+        })),
+
+      // ── Ideas ────────────────────────────────────────────────────────────────
+      addIdea: (idea) => set((s) => ({ ideas: [idea, ...s.ideas] })),
+      updateIdea: (id, updates) =>
+        set((s) => ({
+          ideas: s.ideas.map((i) => (i.id === id ? { ...i, ...updates } : i)),
+        })),
+      removeIdea: (id) =>
+        set((s) => ({ ideas: s.ideas.filter((i) => i.id !== id) })),
+      advanceIdea: (id) =>
+        set((s) => ({
+          ideas: s.ideas.map((i) => {
+            if (i.id !== id) return i;
+            const next: Record<string, "raw" | "sorted" | "selected"> = {
+              raw: "sorted",
+              sorted: "selected",
+              selected: "selected",
+            };
+            return { ...i, stage: next[i.stage] };
+          }),
+        })),
+
+      // ── Content Hub ──────────────────────────────────────────────────────────
+      addContentSeries: (series) =>
+        set((s) => ({ contentSeries: [...s.contentSeries, series] })),
+      updateContentSeries: (id, updates) =>
+        set((s) => ({
+          contentSeries: s.contentSeries.map((i) =>
+            i.id === id ? { ...i, ...updates } : i
+          ),
+        })),
+      removeContentSeries: (id) =>
+        set((s) => ({ contentSeries: s.contentSeries.filter((i) => i.id !== id) })),
+      addContentEntry: (seriesId, entry) =>
+        set((s) => ({
+          contentSeries: s.contentSeries.map((i) =>
+            i.id === seriesId ? { ...i, entries: [...i.entries, entry] } : i
+          ),
+        })),
+      updateContentEntry: (seriesId, entryId, updates) =>
+        set((s) => ({
+          contentSeries: s.contentSeries.map((i) =>
+            i.id !== seriesId
+              ? i
+              : {
+                  ...i,
+                  entries: i.entries.map((e) =>
+                    e.id === entryId ? { ...e, ...updates } : e
+                  ),
+                }
+          ),
+        })),
+      removeContentEntry: (seriesId, entryId) =>
+        set((s) => ({
+          contentSeries: s.contentSeries.map((i) =>
+            i.id !== seriesId
+              ? i
+              : { ...i, entries: i.entries.filter((e) => e.id !== entryId) }
+          ),
+        })),
+
+      // ── KPI definitions ──────────────────────────────────────────────────────
+      addKpiDef: (def) =>
+        set((s) => {
+          if (s.kpiDefs.some((d) => d.key === def.key)) return s;
+          return {
+            kpiDefs: [...s.kpiDefs, def],
+            kpiValues: { ...s.kpiValues, [def.key]: 0 },
+          };
+        }),
+      updateKpiDef: (key, updates) =>
+        set((s) => ({
+          kpiDefs: s.kpiDefs.map((d) => (d.key === key ? { ...d, ...updates } : d)),
+        })),
+      removeKpiDef: (key) =>
+        set((s) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { [key]: _removed, ...remainingValues } = s.kpiValues;
+          return {
+            kpiDefs: s.kpiDefs.filter((d) => d.key !== key),
+            kpiValues: remainingValues,
+          };
+        }),
+
+      // ── Personas ─────────────────────────────────────────────────────────────
+      updatePersona: (id, updates) =>
+        set((s) => ({
+          personas: s.personas.map((p) =>
+            p.id === id ? { ...p, ...updates } : p
+          ),
+        })),
+      addPersona: (persona) =>
+        set((s) => ({ personas: [...s.personas, persona] })),
+      removePersona: (id) =>
+        set((s) => ({ personas: s.personas.filter((p) => p.id !== id) })),
+
+      // ── Guardrails CRUD ──────────────────────────────────────────────────────
+      addOperationalMode: (mode) =>
+        set((s) => ({ operationalModes: [...s.operationalModes, mode] })),
+      updateOperationalMode: (id, updates) =>
+        set((s) => ({
+          operationalModes: s.operationalModes.map((m) =>
+            m.id === id ? { ...m, ...updates } : m
+          ),
+        })),
+      removeOperationalMode: (id) =>
+        set((s) => ({ operationalModes: s.operationalModes.filter((m) => m.id !== id) })),
+
+      addPrinciple: (principle) =>
+        set((s) => ({ principles: [...s.principles, principle] })),
+      updatePrinciple: (n, updates) =>
+        set((s) => ({
+          principles: s.principles.map((p) =>
+            p.n === n ? { ...p, ...updates } : p
+          ),
+        })),
+      removePrinciple: (n) =>
+        set((s) => ({ principles: s.principles.filter((p) => p.n !== n) })),
+
+      addRiskPattern: (pattern) =>
+        set((s) => ({ riskPatterns: [...s.riskPatterns, pattern] })),
+      updateRiskPattern: (id, updates) =>
+        set((s) => ({
+          riskPatterns: s.riskPatterns.map((r) =>
+            r.id === id ? { ...r, ...updates } : r
+          ),
+        })),
+      removeRiskPattern: (id) =>
+        set((s) => ({ riskPatterns: s.riskPatterns.filter((r) => r.id !== id) })),
+
+      addCollabCheck: (check) =>
+        set((s) => ({ collabChecklist: [...s.collabChecklist, check] })),
+      updateCollabCheck: (id, updates) =>
+        set((s) => ({
+          collabChecklist: s.collabChecklist.map((c) =>
+            c.id === id ? { ...c, ...updates } : c
+          ),
+        })),
+      removeCollabCheck: (id) =>
+        set((s) => ({ collabChecklist: s.collabChecklist.filter((c) => c.id !== id) })),
+
+      addPhaseBudget: (budget) =>
+        set((s) => ({ phaseBudgets: [...s.phaseBudgets, budget] })),
+      updatePhaseBudget: (idx, updates) =>
+        set((s) => ({
+          phaseBudgets: s.phaseBudgets.map((b, i) =>
+            i === idx ? { ...b, ...updates } : b
+          ),
+        })),
+      removePhaseBudget: (idx) =>
+        set((s) => ({ phaseBudgets: s.phaseBudgets.filter((_, i) => i !== idx) })),
+
+      // ── Strategy dates ────────────────────────────────────────────────────────
+      setStrategyStartDate: (date) => set({ strategyStartDate: date }),
+      setStrategyEstimatedEndDate: (date) => set({ strategyEstimatedEndDate: date }),
+
+      // ── Schedule slots ────────────────────────────────────────────────────────
+      addScheduleSlot: (slot) =>
+        set((s) => {
+          const createdSlot = { ...slot, id: genId() };
+          if (!createdSlot.pipelineItemId) {
+            return { scheduleSlots: [...s.scheduleSlots, createdSlot] };
+          }
+          const calendarStage = s.workflowStages.find((stage) => stage.isCalendarStage);
+          const pipelineItems = s.pipelineItems.map((item) => {
+            if (item.id !== createdSlot.pipelineItemId) return item;
+            if (!calendarStage) return item;
+            return {
+              ...item,
+              stage: calendarStage.id,
+              gates: Array(calendarStage.gates.length).fill(false),
+              lastUpdate: "créneau planifié",
+            };
+          });
+          return {
+            scheduleSlots: [...s.scheduleSlots, createdSlot],
+            pipelineItems,
+          };
+        }),
+      updateScheduleSlot: (id, updates) =>
+        set((s) => ({
+          scheduleSlots: s.scheduleSlots.map((sl) =>
+            sl.id === id ? { ...sl, ...updates } : sl
+          ),
+        })),
+      removeScheduleSlot: (id) =>
+        set((s) => ({
+          scheduleSlots: s.scheduleSlots.filter((sl) => sl.id !== id),
+        })),
+      clearWeekSlots: (weekKey) =>
+        set((s) => ({
+          scheduleSlots: s.scheduleSlots.filter((sl) => sl.weekKey !== weekKey),
+        })),
+      setDefaultSlotDurationMin: (min) => set({ defaultSlotDurationMin: min }),
+
+      // ── Weekly retrospectives ─────────────────────────────────────────────────
+      upsertWeeklyRetro: (retro) =>
+        set((s) => {
+          const now = new Date().toISOString();
+          const existing = s.weeklyRetros.find((r) => r.weekKey === retro.weekKey);
+          if (existing) {
+            return {
+              weeklyRetros: s.weeklyRetros.map((r) =>
+                r.weekKey === retro.weekKey
+                  ? { ...r, ...retro, updatedAt: now }
+                  : r
+              ),
+            };
+          }
+          return {
+            weeklyRetros: [
+              ...s.weeklyRetros,
+              { ...retro, id: genId(), createdAt: now, updatedAt: now },
+            ],
+          };
+        }),
+      removeWeeklyRetro: (weekKey) =>
+        set((s) => ({
+          weeklyRetros: s.weeklyRetros.filter((r) => r.weekKey !== weekKey),
+        })),
+
+      // ── AI Advisor ────────────────────────────────────────────────────────────
+      createAiConversation: (title) => {
+        const id = genId();
+        const now = new Date().toISOString();
+        const conv: AiConversation = {
+          id,
+          title: title ?? `Conversation ${new Date().toLocaleString()}`,
+          messages: [],
+          createdAt: now,
+        };
+        set((s) => ({
+          aiConversations: [conv, ...s.aiConversations],
+          activeConversationId: id,
+        }));
+        return id;
+      },
+      appendAiMessage: (conversationId, message) =>
+        set((s) => ({
+          aiConversations: s.aiConversations.map((c) =>
+            c.id === conversationId
+              ? { ...c, messages: [...c.messages, message] }
+              : c
+          ),
+        })),
+      updateLastAiMessage: (conversationId, content) =>
+        set((s) => ({
+          aiConversations: s.aiConversations.map((c) => {
+            if (c.id !== conversationId) return c;
+            const messages = [...c.messages];
+            const last = messages[messages.length - 1];
+            if (!last || last.role !== "assistant") return c;
+            messages[messages.length - 1] = { ...last, content };
+            return { ...c, messages };
+          }),
+        })),
+      removeAiConversation: (id) =>
+        set((s) => ({
+          aiConversations: s.aiConversations.filter((c) => c.id !== id),
+          activeConversationId:
+            s.activeConversationId === id ? null : s.activeConversationId,
+        })),
+      removeLastAiMessage: (conversationId) =>
+        set((s) => ({
+          aiConversations: s.aiConversations.map((c) =>
+            c.id === conversationId
+              ? { ...c, messages: c.messages.slice(0, -1) }
+              : c
+          ),
+        })),
+      setActiveConversationId: (id) => set({ activeConversationId: id }),
+      setSettingsDeepLinkTab: (tab) => set({ settingsDeepLinkTab: tab }),
+
+      // ── Settings ──────────────────────────────────────────────────────────────
+      importState: (data) =>
+        set((s) => {
+          const ALLOWED_KEYS: (keyof StoreState)[] = [
+            "appConfig", "activeView", "energy", "satisfaction", "daysOut",
+            "utWeek", "operationalMode", "phases", "projects", "kpiValues",
+            "pipelineItems", "workflowStages", "workModes", "quarter", "ideas",
+            "contentSeries", "kpiDefs", "personas", "operationalModes",
+            "principles", "riskPatterns", "collabChecklist", "phaseBudgets",
+            "strategyStartDate", "strategyEstimatedEndDate",
+            "scheduleSlots", "defaultSlotDurationMin", "weeklyRetros",
+            "aiConversations", "activeConversationId",
+          ];
+          const VALID_VIEW_IDS: ViewId[] = [
+            "dashboard", "pipeline", "projects", "kpis", "quarter", "phases",
+            "guardrails", "personas", "ideas", "content-hub",
+            "weekly-calendar", "retrospective", "settings", "user-guide",
+            "ai-advisor",
+          ];
+          const safe: Partial<StoreState> = {};
+          for (const key of ALLOWED_KEYS) {
+            if (key in data) {
+              if (key === "activeView") {
+                const v = (data as Record<string, unknown>)[key];
+                if (typeof v === "string" && VALID_VIEW_IDS.includes(v as ViewId)) {
+                  safe.activeView = v as ViewId;
+                }
+              } else {
+                (safe as Record<string, unknown>)[key] =
+                  (data as Record<string, unknown>)[key];
+              }
+            }
+          }
+          return { ...s, ...safe };
+        }),
+
+      resetToDefaults: () => set({ ...initialState }),
+
+      // ── Google Drive ─────────────────────────────────────────────────────────
+      setGoogleDriveConfig: (config) =>
+        set((s) => ({ googleDriveConfig: { ...s.googleDriveConfig, ...config } })),
+
+      addDriveDocRef: (projectId, ref) =>
+        set((s) => {
+          const firstStage = s.workflowStages[0];
+          const shouldCreatePipelineItem = ref.type === "other" && !!firstStage;
+          const pipelineItem: PipelineItem | null = shouldCreatePipelineItem
+            ? {
+                id: `item-${genId()}`,
+                title: ref.name,
+                description: ref.note || "",
+                stage: firstStage.id,
+                gates: Array(firstStage.gates.length).fill(false),
+                lastUpdate: "ajouté depuis projet",
+                projectId,
+                documentUrl: ref.url,
+                documentName: ref.name,
+                sourceDocRefId: ref.id,
+                nbPieces: "",
+                surface: "",
+                prix: "",
+                etage: "",
+                contactNom: "",
+                contactPrenom: "",
+                contactEmail: "",
+                contactTelephone: "",
+                contactAgence: "",
+              }
+            : null;
+          return {
+            projects: s.projects.map((p) =>
+              p.id === projectId
+                ? { ...p, driveDocRefs: [...(p.driveDocRefs ?? []), ref] }
+                : p
+            ),
+            pipelineItems: pipelineItem ? [...s.pipelineItems, pipelineItem] : s.pipelineItems,
+          };
+        }),
+
+      updateDriveDocRef: (projectId, refId, updates) =>
+        set((s) => ({
+          projects: s.projects.map((p) =>
+            p.id === projectId
+              ? {
+                  ...p,
+                  driveDocRefs: (p.driveDocRefs ?? []).map((r) =>
+                    r.id === refId ? { ...r, ...updates } : r
+                  ),
+                }
+              : p
+          ),
+          pipelineItems: s.pipelineItems.map((item) =>
+            item.sourceDocRefId === refId
+              ? {
+                  ...item,
+                  title: updates.name ?? item.title,
+                  documentName: updates.name ?? item.documentName,
+                  documentUrl: updates.url ?? item.documentUrl,
+                }
+              : item
+          ),
+        })),
+
+      removeDriveDocRef: (projectId, refId) =>
+        set((s) => ({
+          projects: s.projects.map((p) =>
+            p.id === projectId
+              ? { ...p, driveDocRefs: (p.driveDocRefs ?? []).filter((r) => r.id !== refId) }
+              : p
+          ),
+          pipelineItems: s.pipelineItems.filter((item) => item.sourceDocRefId !== refId),
+          scheduleSlots: s.scheduleSlots.map((slot) => {
+            const linkedItemStillExists = s.pipelineItems.some(
+              (item) => item.sourceDocRefId !== refId && item.id === slot.pipelineItemId
+            );
+            if (!slot.pipelineItemId || linkedItemStillExists) return slot;
+            return { ...slot, pipelineItemId: null };
+          }),
+        })),
+    }),
+    {
+      name: "recherche-immo-dashboard-v1",
+      storage: createJSONStorage(() => localStorage),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<StoreState>;
+        // Deep-merge appConfig.modules so newly added module flags (e.g. aiAdvisor)
+        // always default to `true` for users with an existing localStorage state.
+        if (persisted.appConfig) {
+          // ── Migrate old flat AI config (aiApiKey / aiBaseUrl / aiModel) ──────
+          // Read legacy fields from the RAW persisted snapshot BEFORE the spread
+          // merges in currentState defaults (which would supply aiProvider:"openai"
+          // and make the check useless). We migrate whenever aiProviders.openai is
+          // absent/empty-key, so re-running is safe.
+          const rawPc = persisted.appConfig as unknown as Record<string, unknown>;
+          const legacyApiKey = rawPc["aiApiKey"] as string | undefined;
+          const legacyModel = rawPc["aiModel"] as string | undefined;
+          const legacyBaseUrl = rawPc["aiBaseUrl"] as string | undefined;
+          const existingOpenAiKey = (
+            persisted.appConfig.aiProviders?.openai?.apiKey ?? ""
+          ).trim();
+
+          // Promote legacy key into aiProviders.openai if there is something to migrate
+          const shouldMigrate = legacyApiKey !== undefined && existingOpenAiKey === "";
+
+          persisted.appConfig = {
+            ...currentState.appConfig,
+            ...persisted.appConfig,
+            modules: {
+              ...currentState.appConfig.modules,
+              ...persisted.appConfig.modules,
+            },
+          };
+
+          if (shouldMigrate) {
+            persisted.appConfig.aiProvider = "openai";
+            persisted.appConfig.aiProviders = {
+              ...persisted.appConfig.aiProviders,
+              openai: {
+                apiKey: legacyApiKey ?? "",
+                model: legacyModel || "gpt-4o-mini",
+                // Only carry baseUrl over if it differs from the OpenAI default
+                baseUrl:
+                  legacyBaseUrl && legacyBaseUrl !== "https://api.openai.com/v1"
+                    ? legacyBaseUrl
+                    : undefined,
+              },
+            };
+          }
+        }
+        return { ...currentState, ...persisted };
+      },
+    }
+  )
+);
