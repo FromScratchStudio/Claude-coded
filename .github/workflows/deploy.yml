@@ -45,6 +45,8 @@ jobs:
           cp -r generic-dashboard/dist/. gh-pages/generic-dashboard/
           mkdir -p gh-pages/generic-comics-publish
           cp -r generic-comics-publish/dist/. gh-pages/generic-comics-publish/
+          mkdir -p gh-pages/recherche-immo-dashboard
+          cp -r generic-comics-publish/dist/. gh-pages/recherche-immo-dashboard/
 
       - uses: actions/upload-pages-artifact@v3
         with:
