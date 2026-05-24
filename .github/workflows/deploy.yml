@@ -36,6 +36,10 @@ jobs:
       - name: Install & build generic-comics-publish
         working-directory: generic-comics-publish
         run: npm ci && npm run build
+        
+      - name: Install & build recherche-immo-dashboard
+        working-directory: recherche-immo-dashboard
+        run: npm ci && npm run build
 
       - name: Merge outputs
         run: |
